@@ -1,0 +1,22 @@
+@import "tailwindcss";
+#custom-scrollbar::-webkit-scrollbar {
+  width: 8px; /* Vertical scrollbar ki width */
+  height: 8px; /* Horizontal scrollbar ki height */
+}
+
+/* Specific scrollbar track ka color change karna */
+#custom-scrollbar::-webkit-scrollbar-track {
+  background-color: #e0ddca; /* Track ka color */
+  border-radius: 5px; /* Track ke corners ko round karna */
+}
+
+/* Specific scrollbar thumb ka color change karna */
+#custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #3a2bc4; /* Thumb ka color */
+  border-radius: 10px; /* Thumb ke corners ko round karna */
+}
+
+/* Specific scrollbar thumb par hover karte waqt color change karna */
+#custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #2702fc; /* Hover karte waqt thumb ka color */
+}
