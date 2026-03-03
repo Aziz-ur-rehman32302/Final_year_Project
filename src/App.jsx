@@ -15,8 +15,8 @@ const App = () => {
            <Route path="/tenant-login" element={ <TenantLogin/>} />
          </Routes>
       </Router>
-      <AdminBoard/>
-      <TenantDashboard/>
+      {/* <AdminBoard/> */}
+      {/* <TenantDashboard/> */}
     </div>
   )
 }

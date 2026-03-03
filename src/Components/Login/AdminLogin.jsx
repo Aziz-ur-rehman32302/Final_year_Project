@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Logo from "../../assets/Images/plaza-logo-b.png";
 import { Lock, User, } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';

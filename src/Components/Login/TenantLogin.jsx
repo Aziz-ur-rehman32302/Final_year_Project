@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Logo from "../../assets/Images/plaza-logo-b.png";
 import { Lock, User, } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -46,6 +46,18 @@ const TenantLogin = () => {
         Navigate('/')
     }
 
+    useEffect(() => {
+    const fetchUsers = async () => {
+        try {
+            const response = await fetch('/api/plaza_management_system_backend/users.php');
+            const data = await response.json();
+            console.log('Users data:', data);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        }
+    };
+    fetchUsers();
+}, []);
 
     return (
         
