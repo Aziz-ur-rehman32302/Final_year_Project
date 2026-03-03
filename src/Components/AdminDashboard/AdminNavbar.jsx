@@ -4,8 +4,16 @@ import {
   X,
   Building2 
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { logoutUser } from '../../utils/auth';
 
 const AdminNavbar = ({toggleNavButton,isVisible}) => {
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    logoutUser();
+    navigate('/');
+  };
+
   return (
     <div className='sm:w-full border-b py-6 px-4  pb-4 flex justify-between items-center'>
       <div className='flex gap-2'>
@@ -20,7 +28,7 @@ const AdminNavbar = ({toggleNavButton,isVisible}) => {
       </div>
       <div className='flex justify-center items-center gap-6'>
         <h2 className='text-lg sm:block hidden font-semibold'>Admin</h2>
-        <button className='flex justify-center items-center gap-1 pb-1 pt-0.5 px-2 rounded bg-blue-600 outline-0 cursor-pointer active:scale-95 hover:bg-blue-700 transition-colors text-white'> <LogOut className="w-4 h-4 mt-0.5" /><span className='text-lg sm:block hidden text-center'> Logout</span></button>
+        <button onClick={handleLogout} className='flex justify-center items-center gap-1 pb-1 pt-0.5 px-2 rounded bg-blue-600 outline-0 cursor-pointer active:scale-95 hover:bg-blue-700 transition-colors text-white'> <LogOut className="w-4 h-4 mt-0.5" /><span className='text-lg sm:block hidden text-center'> Logout</span></button>
       </div>
     </div>
   )

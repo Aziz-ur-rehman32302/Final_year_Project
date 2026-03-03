@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Logo from "../../assets/Images/plaza-logo-b.png";
 import { Lock, User, } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { loginUser } from '../../utils/auth';
 
 
 const AdminLogin = () => {
@@ -10,20 +11,63 @@ const AdminLogin = () => {
     // State to toggle show/hide password
     const [showpassword, setshowPassword] = useState(false)
 
-    const Formheadling=(e)=>{
-        e.preventDefault()
-        setuserName('');
-        setuserPassword('') 
-    }
-     // Function to toggle password visibility
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
     const togglePassword =()=>{
         setshowPassword(!showpassword)
     }
 
-    const Navigate = useNavigate()
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+            const response = await fetch('/api/plaza_management_system_backend/login.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password: userpassword }),
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                // persist using helper
+                loginUser(result.user, result.token);
+
+                if (result.user.role === 'admin') {
+                    navigate('/admin-dashboard');
+                } else if (result.user.role === 'tenant') {
+                    navigate('/tenant-dashboard');
+                } else {
+                    setError('Unrecognized user role');
+                }
+            } else {
+                setError(result.message || 'Login failed');
+            }
+        } catch (err) {
+            console.error('Login error', err);
+            setError('Network error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const navigate = useNavigate()
+    // if already logged in redirect according to role
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            if (user.role === 'admin') {
+                navigate('/admin-dashboard');
+            } else if (user.role === 'tenant') {
+                navigate('/tenant-dashboard');
+            }
+        }
+    }, [navigate]);
+
     // Navigate to Tenant Login page on button click
     const handleLoginAsTenant = () =>{
-        Navigate('/tenant-login')  // Redirect to Tenant Login page
+        navigate('/tenant-login')  // Redirect to Tenant Login page
     
     }
 
@@ -44,7 +88,7 @@ const AdminLogin = () => {
           <div className="bg-white rounded-lg shadow-2xl  py-4 px-8">
             <h2 className="text-gray-900 mb-6 font-semibold text-center">Admin Login</h2>
 
-            <form  onSubmit={Formheadling}>
+            <form  onSubmit={handleLogin}>
 
                 <div>
                     <label htmlFor="username" className="block text-start text-gray-700 pl-1 mb-2">Username</label>
@@ -91,9 +135,13 @@ const AdminLogin = () => {
                         </div>
 
                 </div>
+                {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
                 <button
                     type="submit"
-                    className="w-full mt-4 bg-blue-600 active:scale-95 text-white py-2.5 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">Login
+                    disabled={loading}
+                    className={`w-full mt-4 bg-blue-600 active:scale-95 text-white py-2.5 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    {loading ? 'Logging in...' : 'Login'}
                </button>
                 
             </form>

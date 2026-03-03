@@ -1,11 +1,23 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import TenantNavBar from "./TenantNavBar";
 import TenantSideBar from "./TenantSideBar";
 import DashBoard from "./DashBoard";
 import TenantNotification from "./TenantNotification";
 
 const TenantDashboard = () => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // redirect if no token or wrong role
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    const user = storedUser ? JSON.parse(storedUser) : null;
+    if (!token || !user || user.role !== 'tenant') {
+      navigate('/tenant-login');
+    }
+  }, [navigate]);
 
   const [TenantDashBoard, setTenantDashBoard] = useState(false);
   const [DashBoard_Tenant, setDashBoard_Tenant] = useState(true);

@@ -13,6 +13,9 @@ const App = () => {
          <Routes>
            <Route path="/" element={ <AdminLogin/>} />
            <Route path="/tenant-login" element={ <TenantLogin/>} />
+           {/* protected dashboards */}
+           <Route path="/admin-dashboard" element={<AdminBoard />} />
+           <Route path="/tenant-dashboard" element={<TenantDashboard />} />
          </Routes>
       </Router>
       {/* <AdminBoard/> */}

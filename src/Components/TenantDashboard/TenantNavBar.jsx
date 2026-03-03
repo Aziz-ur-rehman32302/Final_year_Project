@@ -7,8 +7,16 @@ import {
   X,
   Building2 
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { logoutUser } from '../../utils/auth';
 
 const TenantNavBar = ({sidebarOpen,setSidebarOpen}) => {
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    logoutUser();
+    navigate('/tenant-login');
+  };
+
   return (
     <div className='border-b z-100  bg-gray-50'>
         {/* Top Navigation */}
@@ -32,7 +40,7 @@ const TenantNavBar = ({sidebarOpen,setSidebarOpen}) => {
             <span className="text-black text-lg  relative 
              cursor-pointer after:content-[''] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:w-0  after:bg-black after:transition-all after:duration-500 hover:after:left-0  hover:after:w-full font-medium hidden sm:inline">Tenant Portal</span>
             <button
-            //   onClick={onLogout}
+               onClick={handleLogout}
               className="flex items-center font-semibold bg-blue-400 cursor-pointer gap-2 px-4 py-2 text-black  active:scale-95 hover:bg-blue-600 rounded-lg transition-colors"
             >
               <LogOut className="w-5 h-5" />

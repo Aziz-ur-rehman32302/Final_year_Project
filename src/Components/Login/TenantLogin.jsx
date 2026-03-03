@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Logo from "../../assets/Images/plaza-logo-b.png";
 import { Lock, User, } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { loginUser } from '../../utils/auth';
 
 const TenantLogin = () => {
     const [username, setuserName] = useState('')
@@ -15,11 +16,48 @@ const TenantLogin = () => {
 
     const [isEmailSent, setisEmailSent] = useState(false)
 
-    const Formheadling=(e)=>{
-        e.preventDefault()
-        setuserName('');
-        setuserPassword('') 
-    }
+    // login handler for both tenant and admin (backend will return role)
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+            const response = await fetch('/api/plaza_management_system_backend/login.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username,
+                    password: userpassword,
+                }),
+            });
+
+            const result = await response.json();
+            if (result.status === 'success') {
+                // persist token and user info via helper
+                loginUser(result.user, result.token);
+
+                // navigate based on role
+                if (result.user.role === 'tenant') {
+                    navigate('/tenant-dashboard');
+                } else if (result.user.role === 'admin') {
+                    navigate('/admin-dashboard');
+                } else {
+                    setError('Unrecognized user role');
+                }
+            } else {
+                setError(result.message || 'Login failed');
+            }
+        } catch (err) {
+            console.error('Login error', err);
+            setError('Network error');
+        } finally {
+            setLoading(false);
+        }
+    };
      // Function to toggle password visibility
     const togglePassword =()=>{
         setshowPassword(!showpassword)
@@ -41,23 +79,25 @@ const TenantLogin = () => {
         
     }
     
-    const Navigate =useNavigate()
+    const navigate = useNavigate();
+
+    // if already logged in redirect to proper dashboard
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            const user = JSON.parse(storedUser);
+            if (user.role === 'tenant') {
+                navigate('/tenant-dashboard');
+            } else if (user.role === 'admin') {
+                navigate('/admin-dashboard');
+            }
+        }
+    }, [navigate]);
+
     const handleLoginasAdmin = ()=>{
-        Navigate('/')
+        navigate('/')
     }
 
-    useEffect(() => {
-    const fetchUsers = async () => {
-        try {
-            const response = await fetch('/api/plaza_management_system_backend/users.php');
-            const data = await response.json();
-            console.log('Users data:', data);
-        } catch (error) {
-            console.error('Error fetching users:', error);
-        }
-    };
-    fetchUsers();
-}, []);
 
     return (
         
@@ -107,7 +147,7 @@ const TenantLogin = () => {
           <div className="bg-white rounded-lg shadow-2xl py-4 px-8">
             <h2 className="text-gray-900 mb-6 text-center font-semibold ">Tanent Login</h2>
 
-            <form onSubmit={Formheadling}>
+            <form onSubmit={handleLogin}>
 
                 <div>
                     <label htmlFor="username" className="block text-start text-gray-700 pl-1 mb-2">Username</label>
@@ -163,9 +203,13 @@ const TenantLogin = () => {
                         </div>
 
                 </div>
+                {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
                 <button
                     type="submit"
-                    className="w-full mt-4 bg-blue-600 active:scale-95 text-white py-2.5 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">Login
+                    disabled={loading}
+                    className={`w-full mt-4 bg-blue-600 active:scale-95 text-white py-2.5 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    {loading ? 'Logging in...' : 'Login'}
                </button>
                 
             </form>
