@@ -11,7 +11,9 @@ const TenantRegistration = () => {
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [formData, setFormData] = useState({
-      name: '',
+      username: '',
+      password: '',
+      role: 'tenant',
       cnic: '',
       phone: '',
       email: '',
@@ -37,7 +39,9 @@ const TenantRegistration = () => {
       setShowSuccess(false);
       // Reset form
       setFormData({
-        name: '',
+        username: '',
+        password: '',
+        role: 'tenant',
         cnic: '',
         phone: '',
         email: '',
@@ -88,19 +92,52 @@ const TenantRegistration = () => {
             <h3 className="text-gray-900 mb-4 pb-2 border-b border-gray-200">Personal Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="name" className="block text-gray-700 mb-2">
-                  Full Name *
+                <label htmlFor="username" className="block text-gray-700 mb-2">
+                  Username *
                 </label>
                 <input
-                  id="name"
-                  name="name"
+                  id="username"
+                  name="username"
                   type="text"
-                  value={formData.name}
+                  value={formData.username}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  placeholder="Enter full name"
+                  placeholder="Choose a username"
                   required
                 />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-gray-700 mb-2">
+                  Password *
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  placeholder="Set a password"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="role" className="block text-gray-700 mb-2">
+                  Role *
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  required
+                >
+                  <option value="tenant">Tenant</option>
+                  <option value="admin">Admin</option>
+                </select>
               </div>
 
               <div>
