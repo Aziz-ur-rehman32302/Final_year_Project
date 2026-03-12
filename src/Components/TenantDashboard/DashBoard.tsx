@@ -10,57 +10,6 @@ import {
 import { useState, useEffect } from "react";
 import { getToken } from "../../utils/auth";
 
-const rentHistory = [
-  {
-    id: 1,
-    month: "November 2025",
-    amount: 2500,
-    status: "Paid",
-    datePaid: "2025-11-05",
-    statusColor: "green",
-  },
-  {
-    id: 2,
-    month: "October 2025",
-    amount: 2500,
-    status: "Paid",
-    datePaid: "2025-10-08",
-    statusColor: "green",
-  },
-  {
-    id: 3,
-    month: "September 2025",
-    amount: 2500,
-    status: "Paid",
-    datePaid: "2025-09-03",
-    statusColor: "green",
-  },
-  {
-    id: 4,
-    month: "August 2025",
-    amount: 2500,
-    status: "Paid",
-    datePaid: "2025-08-07",
-    statusColor: "green",
-  },
-  {
-    id: 5,
-    month: "July 2025",
-    amount: 2500,
-    status: "Paid",
-    datePaid: "2025-07-05",
-    statusColor: "green",
-  },
-  {
-    id: 6,
-    month: "June 2025",
-    amount: 2500,
-    status: "Paid",
-    datePaid: "2025-06-10",
-    statusColor: "green",
-  },
-];
-
 const DashBoard = () => {
   // API Data State
   const [tenantData, setTenantData] = useState(null);
@@ -160,6 +109,170 @@ const DashBoard = () => {
     };
 
     fetchTenantData();
+  }, []);
+  
+  // Fetch tenant issues
+  useEffect(() => {
+    const fetchTenantIssues = async () => {
+      try {
+        const token = getToken();
+        if (!token) {
+          setIssuesError('No authentication token found');
+          setLoadingIssues(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost/plaza_management_system_backend/fetch_tenant_issues.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        
+        if (!responseText || responseText.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch (parseError) {
+          throw new Error('Invalid response format');
+        }
+
+        if (result.status === 'success') {
+          setTenantIssues(result.data || []);
+          console.log('Tenant Issues:', result.data);
+        } else {
+          setIssuesError(result.message || 'Failed to fetch issues');
+        }
+      } catch (err) {
+        console.error('Issues fetch error:', err);
+        setIssuesError('Failed to load issues. Please try again.');
+      } finally {
+        setLoadingIssues(false);
+      }
+    };
+
+    fetchTenantIssues();
+  }, []);
+  
+  // Fetch financial summary
+  useEffect(() => {
+    const fetchFinancialSummary = async () => {
+      try {
+        const token = getToken();
+        if (!token) {
+          setFinancialError('No authentication token found');
+          setLoadingFinancial(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost/plaza_management_system_backend/tenant_financial_summary.php', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        
+        if (!responseText || responseText.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch (parseError) {
+          throw new Error('Invalid response format');
+        }
+
+        if (result.status === 'success' && result.data) {
+          setFinancialData(result.data);
+          console.log('Financial Summary:', result.data);
+        } else {
+          setFinancialError(result.message || 'Failed to fetch financial data');
+        }
+      } catch (err) {
+        console.error('Financial data fetch error:', err);
+        setFinancialError('Failed to load financial data. Please try again.');
+      } finally {
+        setLoadingFinancial(false);
+      }
+    };
+
+    fetchFinancialSummary();
+  }, []);
+  
+  // Fetch rent history
+  useEffect(() => {
+    const fetchRentHistory = async () => {
+      try {
+        const token = getToken();
+        if (!token) {
+          setRentHistoryError('No authentication token found');
+          setLoadingRentHistory(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost/plaza_management_system_backend/fetch_rent_history.php', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        
+        if (!responseText || responseText.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch (parseError) {
+          throw new Error('Invalid response format');
+        }
+
+        if (result.status === 'success') {
+          // Sort records with latest month first
+          const sortedHistory = (result.data || []).sort((a, b) => {
+            const dateA = new Date(a.month);
+            const dateB = new Date(b.month);
+            return dateB - dateA; // Latest first
+          });
+          
+          setRentHistory(sortedHistory);
+          console.log('Rent History:', sortedHistory);
+        } else {
+          setRentHistoryError(result.message || 'Failed to fetch rent history');
+        }
+      } catch (err) {
+        console.error('Rent history fetch error:', err);
+        setRentHistoryError('Failed to load rent history. Please try again.');
+      } finally {
+        setLoadingRentHistory(false);
+      }
+    };
+
+    fetchRentHistory();
   }, []);
   
   // Payment processing function
@@ -307,6 +420,112 @@ const DashBoard = () => {
     }
   };
   
+  // Report Issue function
+  const reportIssue = async (e) => {
+    e.preventDefault();
+    
+    // Validate issue description
+    if (!issueDescription.trim()) {
+      setIssueError('Please describe your issue before submitting.');
+      return;
+    }
+    
+    setIsSubmittingIssue(true);
+    setIssueError('');
+    
+    try {
+      const token = getToken();
+      if (!token) {
+        setIssueError('Authentication required. Please login again.');
+        setIsSubmittingIssue(false);
+        return;
+      }
+      
+      // Get tenant ID from current data
+      const tenantId = tenantData?.tenant_info?.id;
+      if (!tenantId) {
+        setIssueError('Unable to identify tenant. Please refresh and try again.');
+        setIsSubmittingIssue(false);
+        return;
+      }
+      
+      const issueData = {
+        tenant_id: tenantId,
+        issue_description: issueDescription.trim()
+      };
+      
+      console.log('Submitting issue:', issueData);
+      
+      const response = await fetch('http://localhost/plaza_management_system_backend/report_issue.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(issueData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const responseText = await response.text();
+      
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Empty response from server');
+      }
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error('Invalid response format from server');
+      }
+      
+      if (result.status === 'success') {
+        // Clear form and show success
+        setIssueDescription('');
+        setIssueSuccess(true);
+        
+        // Refresh issues list after successful submission
+        setTimeout(() => {
+          window.location.reload(); // Refresh to show new issue
+        }, 2000);
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          setIssueSuccess(false);
+        }, 5000);
+        
+        console.log('✅ Issue reported successfully');
+      } else {
+        // Handle API error response
+        const errorMessage = result.message || result.error || 'Failed to submit issue. Please try again.';
+        setIssueError(errorMessage);
+        console.error('❌ Issue submission failed:', errorMessage);
+      }
+    } catch (err) {
+      console.error('💥 Issue submission error:', err);
+      
+      // Handle different types of errors
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setIssueError('❌ Network Error: Unable to connect to server. Please check your internet connection.');
+      } else if (err.message.includes('HTTP 404')) {
+        setIssueError('❌ Service Error: Issue reporting service not found. Please contact support.');
+      } else if (err.message.includes('HTTP 500')) {
+        setIssueError('❌ Server Error: Issue reporting service is temporarily unavailable. Please try again later.');
+      } else if (err.message.includes('Empty response')) {
+        setIssueError('❌ Server Error: No response from issue reporting service.');
+      } else if (err.message.includes('Invalid response')) {
+        setIssueError('❌ Server Error: Invalid response format. Please contact technical support.');
+      } else {
+        setIssueError('❌ Unexpected Error: Something went wrong. Please try again or contact support.');
+      }
+    } finally {
+      setIsSubmittingIssue(false);
+    }
+  };
+  
   // Open payment modal
   const handlePayNowClick = () => {
     setShowPaymentModal(true);
@@ -324,19 +543,26 @@ const DashBoard = () => {
     handlePayNowClick();
   };
   //  --------------------------------------------------------
-  const [validating, setvalidating] = useState("");
-  const stopValidating =( e )=> {
-    e.preventDefault();
-    setvalidating("");
-    SubmitIssue();
-  };
-  const [IssueSubmit, setIssueSubmit] = useState(false);
-  const SubmitIssue = () => {
-    setIssueSubmit(true);
-    setTimeout(() => {
-      setIssueSubmit(false);
-    }, 3000);
-  };
+  // Issue reporting states
+  const [issueDescription, setIssueDescription] = useState("");
+  const [isSubmittingIssue, setIsSubmittingIssue] = useState(false);
+  const [issueError, setIssueError] = useState('');
+  const [issueSuccess, setIssueSuccess] = useState(false);
+  
+  // Tenant issues states
+  const [tenantIssues, setTenantIssues] = useState([]);
+  const [loadingIssues, setLoadingIssues] = useState(true);
+  const [issuesError, setIssuesError] = useState('');
+  
+  // Financial summary states
+  const [financialData, setFinancialData] = useState(null);
+  const [loadingFinancial, setLoadingFinancial] = useState(true);
+  const [financialError, setFinancialError] = useState('');
+  
+  // Rent history states
+  const [rentHistory, setRentHistory] = useState([]);
+  const [loadingRentHistory, setLoadingRentHistory] = useState(true);
+  const [rentHistoryError, setRentHistoryError] = useState('');
   return (
     <div className="p-5 w-full">
       {/* Header */}
@@ -591,14 +817,31 @@ const DashBoard = () => {
       {/* ========================================================== */}
 
       {/* Issue Success Toast */}
-      {IssueSubmit && (
-        <div
-          className="fixed top-18 right-4 z-5 bg-green-600 text-white
-            px-6 py-3 rounded-lg shadow-lg  flex items-center gap-3  transform transition-all duration-400  translate-x-0 opacity-100
-            animate-bounce"
-        >
-          <CheckCircle className="w-5 h-5" />
-          <span>Issue reported successfully! Admin will be notified.</span>
+      {issueSuccess && (
+        <div className="fixed top-4 right-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 transform transition-all duration-700 ease-out animate-slide-in">
+          <div className="flex-shrink-0">
+            <div className="relative">
+              <CheckCircle className="w-8 h-8 animate-pulse" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
+            </div>
+          </div>
+          <div className="flex-grow">
+            <p className="font-bold text-lg flex items-center gap-2">
+              Issue Reported! 
+              <span className="text-xl animate-bounce">📧</span>
+            </p>
+            <p className="text-sm opacity-90 font-medium">
+              Your issue has been sent to the admin. Please wait for a response.
+            </p>
+          </div>
+          <div className="flex-shrink-0">
+            <button 
+              onClick={() => setIssueSuccess(false)}
+              className="text-white hover:text-gray-200 transition-colors p-1 hover:bg-white hover:bg-opacity-20 rounded-full"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
@@ -614,118 +857,366 @@ const DashBoard = () => {
           possible.
         </p>
 
-        <form onSubmit={stopValidating}>
-          <div className="flex  flex-col  mt-3">
+        <form onSubmit={reportIssue}>
+          <div className="flex flex-col mt-3">
             <label className="mb-2 text-lg" htmlFor="issue">
               Issue Description *
             </label>
             <textarea
-              value={validating}
-              onChange={(e) => {
-                setvalidating(e.target.value);
-              }}
-              placeholder="Describe your Issue in Detail..."
+              value={issueDescription}
+              onChange={(e) => setIssueDescription(e.target.value)}
+              placeholder="Describe your issue in detail..."
               required
               id="issue"
               name="issueDescription"
               rows={5}
-              className="border resize-none  border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded p-2 w-full"
+              className="border resize-none border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded p-2 w-full"
+              disabled={isSubmittingIssue}
             ></textarea>
-            <p className="text-sm mt-3">
-              Your issue will be sent to the admin and displayed on their
-              dashboard
+            
+            {/* Error Message */}
+            {issueError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg mt-2 text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{issueError}</span>
+                <button 
+                  type="button"
+                  onClick={() => setIssueError('')}
+                  className="ml-auto text-red-500 hover:text-red-700"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            
+            <p className="text-sm mt-3 text-gray-600">
+              Your issue will be sent to the admin and displayed on their dashboard
             </p>
           </div>
+          
           <div className="flex justify-center items-center">
-            <button className="flex gap-3 text-lg font-semibold py-2 px-13 mt-3 bg-blue-500 cursor-pointer hover:bg-blue-600  hover:shadow-xl  ease-in-out transition-all duration-450  active:scale-95 p-3 rounded-lg ">
-              {" "}
-              <MessageSquare className="w-5 h-5 mt-1" /> Submit Issue{" "}
+            <button 
+              type="submit"
+              disabled={isSubmittingIssue || !issueDescription.trim()}
+              className={`flex gap-3 text-lg font-semibold py-2 px-6 mt-3 rounded-lg transition-all duration-300 ${
+                isSubmittingIssue || !issueDescription.trim()
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-xl active:scale-95'
+              }`}
+            >
+              {isSubmittingIssue ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mt-0.5"></div>
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <MessageSquare className="w-5 h-5 mt-1" />
+                  Submit Issue
+                </>
+              )}
             </button>
           </div>
         </form>
       </div>
+      
+      {/* Tenant Issues Section */}
+      <div className="border border-gray-200 p-4 mt-6 rounded-lg bg-gray-100">
+        <h1 className="flex gap-3 text-lg font-semibold mb-4">
+          <span className="w-5 h-5">
+            <MessageSquare />
+          </span>
+          My Issues
+        </h1>
+        
+        {/* Loading Issues */}
+        {loadingIssues && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-3 text-blue-600">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Loading your issues...</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Issues Error */}
+        {issuesError && !loadingIssues && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            <span>{issuesError}</span>
+          </div>
+        )}
+        
+        {/* Issues List */}
+        {!loadingIssues && !issuesError && (
+          <div className="space-y-4">
+            {tenantIssues.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg">No issues reported yet</p>
+                <p className="text-sm">Use the form above to report any problems</p>
+              </div>
+            ) : (
+              tenantIssues.map((issue, index) => (
+                <div key={index} className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
+                  {/* Issue Header */}
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5 text-blue-600" />
+                      <span className="font-semibold text-gray-800">Issue #{issue.id || index + 1}</span>
+                    </div>
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      issue.issue_status === 'resolved' || issue.status === 'resolved'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {issue.issue_status === 'resolved' || issue.status === 'resolved' ? 'Resolved' : 'Pending'}
+                    </div>
+                  </div>
+                  
+                  {/* Issue Description */}
+                  <div className="mb-3">
+                    <h4 className="font-medium text-gray-700 mb-2">Issue Description:</h4>
+                    <p className="text-gray-600 bg-gray-50 p-3 rounded border">
+                      {issue.issue_description || issue.description}
+                    </p>
+                  </div>
+                  
+                  {/* Issue Date */}
+                  {issue.created_at && (
+                    <div className="mb-3">
+                      <span className="text-sm text-gray-500">
+                        Reported on: {new Date(issue.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Resolved Issue Highlight */}
+                  {(issue.issue_status === 'resolved' || issue.status === 'resolved') && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <span className="font-semibold text-green-800">
+                          Your issue has been resolved by the admin.
+                        </span>
+                      </div>
+                      
+                      {/* Admin Response */}
+                      {(issue.admin_response || issue.response) && (
+                        <div className="mt-3">
+                          <h5 className="font-medium text-green-700 mb-2">Admin Response:</h5>
+                          <p className="text-green-700 bg-green-100 p-3 rounded border border-green-200">
+                            {issue.admin_response || issue.response}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
       {/* ============================================================ */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-8 mt-6">
-        <div className="p-5 border text-white border-gray-400 rounded-xl bg-blue-600 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-300 ease-in-out">
-          <div className="bg-blue-600 py-1 rounded-md w-fit">
-            <Calendar className=" text-white" />
+      {/* Financial Summary Cards */}
+      <div className="mt-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <DollarSign className="w-5 h-5 text-blue-600" />
+          Financial Summary
+        </h2>
+        
+        {/* Loading Financial Data */}
+        {loadingFinancial && (
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="p-5 border border-gray-400 rounded-xl bg-white animate-pulse">
+                <div className="bg-gray-200 p-2 rounded-md w-fit mb-3">
+                  <div className="w-6 h-6 bg-gray-300 rounded"></div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-6 bg-gray-300 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="mt-1">
-            <h1 className="text-lg font-semibold">5th</h1>
-            <p>Due Date (Monthly)</p>
+        )}
+        
+        {/* Financial Data Error */}
+        {financialError && !loadingFinancial && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            <span>{financialError}</span>
+            <button 
+              onClick={() => window.location.reload()}
+              className="ml-auto bg-red-100 hover:bg-red-200 px-3 py-1 rounded text-sm transition-colors"
+            >
+              Retry
+            </button>
           </div>
-        </div>
+        )}
+        
+        {/* Financial Summary Cards */}
+        {!loadingFinancial && !financialError && financialData && (
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-8 animate-slide-up">
+            {/* Due Date Card */}
+            <div className="p-5 border text-white border-gray-400 rounded-xl bg-blue-600 hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 ease-in-out animate-card-appear">
+              <div className="bg-blue-600 py-1 rounded-md w-fit">
+                <Calendar className="text-white" />
+              </div>
+              <div className="mt-1">
+                <h1 className="text-lg font-semibold">{financialData.rent_due_date}th</h1>
+                <p>Due Date (Monthly)</p>
+              </div>
+            </div>
 
-        <div className="p-5 border  border-gray-400 rounded-xl bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-300 ease-in-out">
-          <div className="bg-green-200 p-2 rounded-md w-fit">
-            <CheckCircle className=" text-green-700" />
-          </div>
-          <div className="mt-1">
-            <h1 className="text-lg font-semibold">6</h1>
-            <p>Payments Made</p>
-          </div>
-        </div>
+            {/* Payments Made Card */}
+            <div className="p-5 border border-gray-400 rounded-xl bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 ease-in-out animate-card-appear" style={{animationDelay: '0.1s'}}>
+              <div className="bg-green-200 p-2 rounded-md w-fit">
+                <CheckCircle className="text-green-700" />
+              </div>
+              <div className="mt-1">
+                <h1 className="text-lg font-semibold">{financialData.payments_made}</h1>
+                <p>Payments Made</p>
+              </div>
+            </div>
 
-        <div className="p-5 border  border-gray-400 rounded-xl bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-300 ease-in-out">
-          <div className="bg-blue-200 p-2 rounded-md w-fit">
-            <DollarSign className=" text-blue-700" />
-          </div>
-          <div className="mt-1">
-            <h1 className="text-lg font-semibold">$15,000</h1>
-            <p>Total Paid</p>
-          </div>
-        </div>
+            {/* Total Paid Card */}
+            <div className="p-5 border border-gray-400 rounded-xl bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 ease-in-out animate-card-appear" style={{animationDelay: '0.2s'}}>
+              <div className="bg-blue-200 p-2 rounded-md w-fit">
+                <DollarSign className="text-blue-700" />
+              </div>
+              <div className="mt-1">
+                <h1 className="text-lg font-semibold">${financialData.total_paid?.toLocaleString() || '0'}</h1>
+                <p>Total Paid</p>
+              </div>
+            </div>
 
-        <div className="p-5 border  border-gray-400 rounded-xl bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-300 ease-in-out">
-          <div className="bg-yellow-200 p-2 rounded-md w-fit">
-            <FileText className=" text-yellow-700" />
+            {/* Agreement End Card */}
+            <div className="p-5 border border-gray-400 rounded-xl bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 ease-in-out animate-card-appear" style={{animationDelay: '0.3s'}}>
+              <div className="bg-yellow-200 p-2 rounded-md w-fit">
+                <FileText className="text-yellow-700" />
+              </div>
+              <div className="mt-1">
+                <h1 className="text-lg font-semibold">
+                  {financialData.agreement_end_date ? 
+                    new Date(financialData.agreement_end_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    }) : 'N/A'
+                  }
+                </h1>
+                <p>Agreement End</p>
+              </div>
+            </div>
           </div>
-          <div className="mt-1">
-            <h1 className="text-lg font-semibold">Dec 31, 2026</h1>
-            <p>Agreement End</p>
-          </div>
-        </div>
+        )}
       </div>
       {/* ---------------------------------------------------- */}
+      {/* Rent History Section */}
       <div className="border border-gray-200 p-3 mt-6 rounded-lg bg-gray-100">
-        <h1 className="flex gap-3 text-lg font-semibold ">
-          <span className=" w-5 h-5">
+        <h1 className="flex gap-3 text-lg font-semibold mb-4">
+          <span className="w-5 h-5">
             <FileText />
           </span>
           Rent History
         </h1>
-        <div
-          id="custom-scrollbar"
-          className="w-full  bg-white mt-4 border border-gray-400 rounded-t-2xl rounded-b-lg overflow-x-scroll lg:overflow-x-hidden  relative"
-        >
-          <table className="lg:w-full min-w-[1000px] text-left border-collapse">
-            {/* Table Head */}
-            <thead className="bg-gray-100 text-gray-700 font-semibold">
-              <tr>
-                <th className="py-3 px-4">Month</th>
-                <th className="py-3 px-4">Amount</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Date Paid</th>
-              </tr>
-            </thead>
-
-            {/* Table Body */}
-            <tbody className="divide-y">
-              {rentHistory.map((e, index) => (
-                <tr key={index} className="hover:bg-gray-50 transition-colors ">
-                  <td className="py-2 px-4">{e.month}</td>
-                  <td className="py-2 px-4">{e.amount}</td>
-                  <td className="py-2 px-4 flex gap-1 text-green-600 bg-green-200  rounded-2xl h-6 w-16 justify-center text-sm mt-2 ml-2   items-center"><span ><CheckCircle className="w-3 h-3 mt-0.5"/></span>{e.status}</td>
-                  <td className="py-2 px-4">{e.datePaid || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {/* Extra content outside table */}
-          <div className=" pt-2 bg-gray-50  text-center">
-            {/* This is outside the table */}
+        
+        {/* Loading Rent History */}
+        {loadingRentHistory && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-3 text-blue-600">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Loading rent history...</span>
+            </div>
           </div>
-        </div>
+        )}
+        
+        {/* Rent History Error */}
+        {rentHistoryError && !loadingRentHistory && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            <span>{rentHistoryError}</span>
+            <button 
+              onClick={() => window.location.reload()}
+              className="ml-auto bg-red-100 hover:bg-red-200 px-3 py-1 rounded text-sm transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        
+        {/* Rent History Table */}
+        {!loadingRentHistory && !rentHistoryError && (
+          <div className="w-full bg-white mt-4 border border-gray-400 rounded-t-2xl rounded-b-lg overflow-x-scroll lg:overflow-x-hidden relative animate-slide-up">
+            {rentHistory.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg font-medium">No payment history available.</p>
+                <p className="text-sm">Your payment records will appear here once you make payments.</p>
+              </div>
+            ) : (
+              <table className="lg:w-full min-w-[1000px] text-left border-collapse">
+                {/* Table Head */}
+                <thead className="bg-gray-100 text-gray-700 font-semibold">
+                  <tr>
+                    <th className="py-3 px-4 text-left">Month</th>
+                    <th className="py-3 px-4 text-left">Amount</th>
+                    <th className="py-3 px-4 text-left">Status</th>
+                    <th className="py-3 px-4 text-left">Date Paid</th>
+                  </tr>
+                </thead>
+
+                {/* Table Body */}
+                <tbody className="divide-y">
+                  {rentHistory.map((record, index) => (
+                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-900">
+                        {record.month}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">
+                        ${record.amount?.toLocaleString() || '0'}
+                      </td>
+                      <td className="py-3 px-4">
+                        {record.status === 'Paid' ? (
+                          <div className="flex items-center gap-1 text-green-600 bg-green-100 rounded-full px-3 py-1 w-fit">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="text-sm font-medium">Paid</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600 bg-red-100 rounded-full px-3 py-1 w-fit">
+                            <AlertCircle className="w-4 h-4" />
+                            <span className="text-sm font-medium">{record.status || 'Unpaid'}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-gray-700">
+                        {record.date_paid ? 
+                          new Date(record.date_paid).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          }) : '-'
+                        }
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            
+            {/* Table Footer */}
+            {rentHistory.length > 0 && (
+              <div className="pt-2 pb-2 bg-gray-50 text-center border-t">
+                <p className="text-sm text-gray-500">
+                  Showing {rentHistory.length} payment record{rentHistory.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
         </div>
       )}
