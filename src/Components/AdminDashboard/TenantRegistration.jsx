@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 
 import AdminSidebar from './AdminSidebar'
-
+import { getToken } from '../../utils/auth'
 import { UserPlus,CheckCircle } from 'lucide-react';
 
 const TenantRegistration = () => {
@@ -10,6 +10,8 @@ const TenantRegistration = () => {
 
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
       username: '',
       password: '',
@@ -17,12 +19,12 @@ const TenantRegistration = () => {
       cnic: '',
       phone: '',
       email: '',
-      shopNumber: '',
+      shop_number: '',
       floor: '',
-      rentAmount: '',
-      rentDueDate: '',
-      startDate: '',
-      endDate: '',
+      rent_amount: '',
+      rent_due_date: '',
+      start_date: '',
+      end_date: '',
     });
 
      const handleChange = (e) => {
@@ -32,27 +34,77 @@ const TenantRegistration = () => {
     });
   };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault();
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      // Reset form
-      setFormData({
-        username: '',
-        password: '',
-        role: 'tenant',
-        cnic: '',
-        phone: '',
-        email: '',
-        shopNumber: '',
-        floor: '',
-        rentAmount: '',
-        rentDueDate: '',
-        startDate: '',
-        endDate: '',
+    
+    if (!formData.username.trim()) {
+      setErrorMessage('Username is required');
+      return;
+    }
+    
+    const token = getToken();
+    if (!token) {
+      setErrorMessage('No token found. Please login again.');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setErrorMessage('');
+    
+    try {
+      const response = await fetch('http://localhost/plaza_management_system_backend/add_tenant.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
       });
-    }, 3000);
+      
+      const responseText = await response.text();
+      
+      if (!responseText) {
+        throw new Error('Empty response from server');
+      }
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error('Invalid response from server');
+      }
+
+      if (result.status === 'success') {
+        // Clear form immediately
+        setFormData({
+          username: '',
+          password: '',
+          role: 'tenant',
+          cnic: '',
+          phone: '',
+          email: '',
+          shop_number: '',
+          floor: '',
+          rent_amount: '',
+          rent_due_date: '',
+          start_date: '',
+          end_date: '',
+        });
+        
+        // Show success message
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 4000);
+      } else {
+        setErrorMessage(result.message || 'Failed to add tenant');
+      }
+    } catch (err) {
+      console.error('Submission error:', err);
+      setErrorMessage('Network error. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
  const shopNumbers = ['S-101', 'S-102', 'S-103', 'S-201', 'S-202', 'S-203', 'S-301', 'S-302', 'S-303'];
@@ -76,9 +128,28 @@ const TenantRegistration = () => {
         
         {/* Success Toast */}
         {showSuccess && (
-          <div className="fixed top-20 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-in z-50">
-            <CheckCircle className="w-5 h-5" />
-            <span>Tenant added successfully!</span>
+          <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-xl flex items-center gap-3 z-50 transform transition-all duration-500 ease-in-out animate-slide-in">
+            <CheckCircle className="w-6 h-6" />
+            <div>
+              <p className="font-semibold">Success!</p>
+              <p className="text-sm opacity-90">Tenant added successfully</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+            <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">!</span>
+            </div>
+            <span>{errorMessage}</span>
+            <button 
+              onClick={() => setErrorMessage('')}
+              className="ml-auto text-red-500 hover:text-red-700"
+            >
+              ×
+            </button>
           </div>
         )}
         
@@ -200,8 +271,8 @@ const TenantRegistration = () => {
                 </label>
                 <select
                   id="shopNumber"
-                  name="shopNumber"
-                  value={formData.shopNumber}
+                  name="shop_number"
+                  value={formData.shop_number}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   required
@@ -248,9 +319,9 @@ const TenantRegistration = () => {
                 </label>
                 <input
                   id="rentAmount"
-                  name="rentAmount"
+                  name="rent_amount"
                   type="number"
-                  value={formData.rentAmount}
+                  value={formData.rent_amount}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   placeholder="2500"
@@ -264,8 +335,8 @@ const TenantRegistration = () => {
                 </label>
                 <select
                   id="rentDueDate"
-                  name="rentDueDate"
-                  value={formData.rentDueDate}
+                  name="rent_due_date"
+                  value={formData.rent_due_date}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   required
@@ -285,9 +356,9 @@ const TenantRegistration = () => {
                 </label>
                 <input
                   id="startDate"
-                  name="startDate"
+                  name="start_date"
                   type="date"
-                  value={formData.startDate}
+                  value={formData.start_date}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   required
@@ -300,9 +371,9 @@ const TenantRegistration = () => {
                 </label>
                 <input
                   id="endDate"
-                  name="endDate"
+                  name="end_date"
                   type="date"
-                  value={formData.endDate}
+                  value={formData.end_date}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   required
@@ -315,9 +386,21 @@ const TenantRegistration = () => {
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               type="submit"
-              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={isSubmitting}
+              className={`bg-blue-600 text-white px-6 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                isSubmitting 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:bg-blue-700 active:scale-95'
+              }`}
             >
-              Submit
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Submitting...
+                </>
+              ) : (
+                'Add Tenant'
+              )}
             </button>
             <button
               type="button"

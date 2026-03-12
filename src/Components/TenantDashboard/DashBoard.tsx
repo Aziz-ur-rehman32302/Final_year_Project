@@ -71,7 +71,7 @@ const DashBoard = () => {
   };
   //  --------------------------------------------------------
   const [validating, setvalidating] = useState("");
-  const stopValidating =(e)=> {
+  const stopValidating =( e )=> {
     e.preventDefault();
     setvalidating("");
     SubmitIssue();

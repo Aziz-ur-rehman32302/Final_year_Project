@@ -23,7 +23,7 @@ const AdminLogin = () => {
         setError('');
         setLoading(true);
         try {
-            const response = await fetch('/api/plaza_management_system_backend/login.php', {
+            const response = await fetch('http://localhost/plaza_management_system_backend/login.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password: userpassword }),
