@@ -43,9 +43,9 @@ export default function RentTrends() {
     <div className="bg-white rounded-xl border border-gray-300 p-6">
       <h2 className="font-semibold mb-4">Rent Collection Trends</h2>
 
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+      <div className="h-64 w-full" style={{ minHeight: '256px', minWidth: '300px' }}>
+        <ResponsiveContainer width="100%" height="100%" minHeight={256}>
+          <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <XAxis dataKey="month" />
             <YAxis />
             <Tooltip content={<CustomTooltip /> }/>
