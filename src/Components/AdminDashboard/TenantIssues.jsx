@@ -20,7 +20,7 @@ import {
 import RentTrends from './RentTrends';
 import { PaymentStatus } from './PaymentStatus';
 import { getToken } from '../../utils/auth';
-
+ 
 
 
 const TenantIssues = () => {

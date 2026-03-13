@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -6,16 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-
-/* DATA: Collected + Expected */
-const data = [
-  { month: "Jan", collected: 85000, expected: 100000 },
-  { month: "Feb", collected: 92000, expected: 100000 },
-  { month: "Mar", collected: 78000, expected: 100000 },
-  { month: "Apr", collected: 98000, expected: 100000 },
-  { month: "May", collected: 89000, expected: 100000 },
-  { month: "Jun", collected: 100000, expected: 100000 },
-];
+import { getToken } from '../../utils/auth';
 
 /* CUSTOM TOOLTIP */
 const CustomTooltip = ({ active, payload, label }) => {
@@ -39,6 +31,107 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function RentTrends() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchRentTrends = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        
+        const token = getToken();
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch('http://localhost/plaza_management_system_backend/rent_collection_trends.php', {
+          method: 'GET',
+          headers: headers,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const responseText = await response.text();
+        
+        if (!responseText || responseText.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch (parseError) {
+          throw new Error('Invalid response format');
+        }
+
+        if (result.status === 'success') {
+          setData(result.data || []);
+        } else {
+          throw new Error(result.message || 'Failed to fetch rent trends data');
+        }
+      } catch (err) {
+        console.error('Rent trends fetch error:', err);
+        setError('Failed to load chart data. Please try again.');
+        
+        // Fallback to empty data array
+        setData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRentTrends();
+  }, []);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-300 p-6">
+        <h2 className="font-semibold mb-4">Rent Collection Trends</h2>
+        <div className="h-64 w-full flex items-center justify-center">
+          <p className="text-gray-500">Loading chart...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-300 p-6">
+        <h2 className="font-semibold mb-4">Rent Collection Trends</h2>
+        <div className="h-64 w-full flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-500 mb-2">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="text-blue-600 hover:text-blue-800 text-sm underline"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (!data.length) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-300 p-6">
+        <h2 className="font-semibold mb-4">Rent Collection Trends</h2>
+        <div className="h-64 w-full flex items-center justify-center">
+          <p className="text-gray-500">No data available</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-300 p-6">
       <h2 className="font-semibold mb-4">Rent Collection Trends</h2>

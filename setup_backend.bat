@@ -59,6 +59,13 @@ if %errorlevel% equ 0 (
     echo ❌ Failed to copy resolve_issue.php
 )
 
+copy "rent_collection_trends.php" "%BACKEND_DIR%\" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✅ Copied rent_collection_trends.php
+) else (
+    echo ❌ Failed to copy rent_collection_trends.php
+)
+
 echo.
 echo ========================================
 echo   Setup Complete!
