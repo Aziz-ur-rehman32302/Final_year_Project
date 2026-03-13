@@ -8,7 +8,7 @@ import {
   Smartphone,
 } from "lucide-react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Notification {
   id: string;
@@ -80,13 +80,164 @@ const notificationHistory: Notification[] = [
 
 
 const NotificationsAdmin = () => {
+  // API State Management for Statistics
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [sentCount, setSentCount] = useState<number>(0);
+  const [failedCount, setFailedCount] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+
+  // Settings State
+  const [reminderDays, setReminderDays] = useState('3');
+  const [overdueDays, setOverdueDays] = useState('1');
+  const [enableEmail, setEnableEmail] = useState(true);
+  const [enableSMS, setEnableSMS] = useState(true);
+  const [enablePush, setEnablePush] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsError, setSettingsError] = useState('');
+
+  // Fetch notification statistics from API
+  useEffect(() => {
+    const fetchNotificationStats = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        
+        const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_logs.php');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch notification logs');
+        }
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          const logs = data.logs || [];
+          
+          // Calculate statistics from logs
+          const total = logs.length;
+          const sent = logs.filter(item => item.status === "Sent").length;
+          const failed = logs.filter(item => item.status === "Failed").length;
+          
+          // Update states
+          setTotalCount(total);
+          setSentCount(sent);
+          setFailedCount(failed);
+        } else {
+          throw new Error('API returned error status');
+        }
+      } catch (err) {
+        console.error('Error fetching notification statistics:', err);
+        setError('Failed to load statistics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotificationStats();
+  }, []);
+
+  // Load existing settings on component mount
+  useEffect(() => {
+    const fetchNotificationSettings = async () => {
+      try {
+        const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_settings.php');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch notification settings');
+        }
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          setReminderDays(data.reminderDays || '3');
+          setOverdueDays(data.overdueDays || '1');
+          setEnableEmail(data.enableEmail !== undefined ? data.enableEmail : true);
+          setEnableSMS(data.enableSMS !== undefined ? data.enableSMS : true);
+          setEnablePush(data.enablePush !== undefined ? data.enablePush : false);
+        }
+      } catch (err) {
+        console.error('Error fetching notification settings:', err);
+      }
+    };
+
+    fetchNotificationSettings();
+  }, []);
+
   {
     /* Success Toast */
   }
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
-  const handleSaveSettings = () => {
-    setShowSaveSuccess(true);
-    setTimeout(() => setShowSaveSuccess(false), 3000);
+  const handleSaveSettings = async () => {
+    try {
+      setSettingsLoading(true);
+      setSettingsError('');
+      
+      // Prepare request payload
+      const requestBody = {
+        reminderDays: reminderDays,
+        overdueDays: overdueDays,
+        enableEmail: enableEmail,
+        enableSMS: enableSMS,
+        enablePush: enablePush
+      };
+      
+      console.log('Sending notification settings:', requestBody);
+      
+      const response = await fetch('http://localhost/plaza_management_system_backend/save_notification_settings.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('Response status:', response.status, response.statusText);
+      
+      // Check if response is ok
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      }
+      
+      // Parse JSON response safely
+      let data;
+      try {
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+        
+        if (!responseText.trim()) {
+          throw new Error('Empty response from server');
+        }
+        
+        data = JSON.parse(responseText);
+        console.log('Parsed response data:', data);
+      } catch (parseError) {
+        console.error('JSON parsing error:', parseError);
+        throw new Error('Invalid JSON response from server');
+      }
+      
+      // Handle backend response
+      if (data.status === 'success') {
+        console.log('Settings saved successfully:', data.message);
+        setShowSaveSuccess(true);
+        setTimeout(() => setShowSaveSuccess(false), 3000);
+      } else {
+        // Log backend error and throw
+        console.error('Backend error:', data.message || 'Unknown backend error');
+        throw new Error(data.message || 'Failed to save settings - backend error');
+      }
+    } catch (err) {
+      console.error('Error saving notification settings:', err);
+      
+      // Set user-friendly error message
+      if (err instanceof Error) {
+        setSettingsError(err.message);
+      } else {
+        setSettingsError('An unexpected error occurred while saving settings');
+      }
+    } finally {
+      setSettingsLoading(false);
+    }
     // ====================================================================
   };
 
@@ -128,25 +279,42 @@ const NotificationsAdmin = () => {
           return 'bg-gray-100 text-gray-700';
       }
     };
-    const [notifications] = useState<Notification[]>(notificationHistory);
-    // Calculate Total Status 
-    const totalCount = notifications.reduce((count, e) => {
-        if (e.status === "Sent" || e.status === "Failed") {
-            return count + 1;
-        }
-        return count;
-        }, 0);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [notificationsLoading, setNotificationsLoading] = useState<boolean>(true);
+    const [notificationsError, setNotificationsError] = useState<string>('');
 
-    const sentCount = notifications.filter((n) => n.status === 'Sent').length;
-    
-    const failedCount = notifications.filter((n) => n.status === 'Failed').length;
+    // Fetch notification history from API
+    useEffect(() => {
+      const fetchNotificationHistory = async () => {
+        try {
+          setNotificationsLoading(true);
+          setNotificationsError('');
+          
+          const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_logs.php');
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch notification logs');
+          }
+          
+          const data = await response.json();
+          
+          if (data.status === 'success') {
+            setNotifications(data.logs || []);
+          } else {
+            throw new Error(data.message || 'Failed to load notification logs');
+          }
+        } catch (err) {
+          console.error('Error fetching notification logs:', err);
+          setNotificationsError('Failed to load notification history');
+        } finally {
+          setNotificationsLoading(false);
+        }
+      };
+
+      fetchNotificationHistory();
+    }, []);
 
     // --------------------------------------------------------
-    const [reminderDays, setReminderDays] = useState('3');
-    const [overdueDays, setOverdueDays] = useState('1');
-    const [enableEmail, setEnableEmail] = useState(true);
-    const [enableSMS, setEnableSMS] = useState(true);
-    const [enablePush, setEnablePush] = useState(false);
   
 
 
@@ -177,35 +345,43 @@ const NotificationsAdmin = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-        <div className="h-25 bg-white rounded-lg p-4  border hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out border-gray-200">
-          <div className="flex items-center gap-3 ">
-            <div className="bg-blue-100 rounded-lg p-2">
-              <Send className="w-5 h-5 text-blue-600" />
+        {loading ? (
+          <div className="col-span-3 text-center py-8 text-gray-600">Loading statistics...</div>
+        ) : error ? (
+          <div className="col-span-3 text-center py-8 text-red-600">{error}</div>
+        ) : (
+          <>
+            <div className="h-25 bg-white rounded-lg p-4  border hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out border-gray-200">
+              <div className="flex items-center gap-3 ">
+                <div className="bg-blue-100 rounded-lg p-2">
+                  <Send className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="text-2xl font-semibold text-gray-90font-semibold">{totalCount}</div>
+              </div>
+              <div className="text-gray-600 pt-1 font-medium">Total Sent</div>
             </div>
-            <div className="text-2xl font-semibold text-gray-90font-semibold">{totalCount}</div>
-          </div>
-          <div className="text-gray-600 pt-1 font-medium">Total Sent</div>
-        </div>
 
-        <div className="bg-white rounded-lg p-4 h-25 border border-gray-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-green-100 rounded-lg p-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+            <div className="bg-white rounded-lg p-4 h-25 border border-gray-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-green-100 rounded-lg p-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="text-2xl text-gray-900 font-semibold">{sentCount}</div>
+              </div>
+              <div className="text-gray-600 font-medium">Delivered</div>
             </div>
-            <div className="text-2xl text-gray-900 font-semibold">{sentCount}</div>
-          </div>
-          <div className="text-gray-600 font-medium">Delivered</div>
-        </div>
 
-        <div className="bg-white rounded-lg p-4 h-25 border border-gray-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-red-100 rounded-lg p-2">
-              <XCircle className="w-5 h-5 text-red-600" />
+            <div className="bg-white rounded-lg p-4 h-25 border border-gray-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-red-100 rounded-lg p-2">
+                  <XCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <div className="text-2xl text-gray-900 font-semibold">{failedCount}</div>
+              </div>
+              <div className="text-gray-600 font-medium">Failed</div>
             </div>
-            <div className="text-2xl text-gray-900 font-semibold">{failedCount}</div>
-          </div>
-          <div className="text-gray-600 font-medium">Failed</div>
-        </div>
+          </>
+        )}
       </div>
       {/* ---------------------------------------------------------------- */}
 
@@ -301,11 +477,21 @@ const NotificationsAdmin = () => {
 
           {/* Save Button */}
           <div className="pt-4">
+            {settingsError && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+                {settingsError}
+              </div>
+            )}
             <button
               onClick={handleSaveSettings}
-              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={settingsLoading}
+              className={`px-6 py-2.5 rounded-lg transition-colors ${
+                settingsLoading
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
             >
-              Save Settings
+              {settingsLoading ? 'Saving...' : 'Save Settings'}
             </button>
           </div>
         </div>
@@ -330,55 +516,72 @@ const NotificationsAdmin = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {notifications.map((dets) => (
-                
-              
-                <tr
-                  key={dets.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm capitalize ${getTypeColor(
-                        dets.type
-                      )}`}
-                    >
-                      {dets.type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-900">
-                    {dets.recipient}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {dets.message}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      {getChannelIcon(dets.channel)}
-                      <span>{dets.channel}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm ${getStatusColor(
-                        dets.status
-                      )}`}
-                    >
-                      {dets.status === "Sent" && (
-                        <CheckCircle className="w-3.5 h-3.5" />
-                      )}
-                      {dets.status === "Failed" && (
-                        <XCircle className="w-3.5 h-3.5" />
-                      )}
-                      {dets.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {dets.sentDate}
+              {notificationsLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-600">
+                    Loading notification history...
                   </td>
                 </tr>
-             )
-             )}
+              ) : notificationsError ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-red-600">
+                    {notificationsError}
+                  </td>
+                </tr>
+              ) : notifications.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    No notifications found
+                  </td>
+                </tr>
+              ) : (
+                notifications.map((dets) => (
+                  <tr
+                    key={dets.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm capitalize ${getTypeColor(
+                          dets.type
+                        )}`}
+                      >
+                        {dets.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-900">
+                      {dets.recipient}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {dets.message}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        {getChannelIcon(dets.channel)}
+                        <span>{dets.channel}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm ${getStatusColor(
+                          dets.status
+                        )}`}
+                      >
+                        {dets.status === "Sent" && (
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        )}
+                        {dets.status === "Failed" && (
+                          <XCircle className="w-3.5 h-3.5" />
+                        )}
+                        {dets.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {dets.sentDate}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
