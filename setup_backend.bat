@@ -66,6 +66,13 @@ if %errorlevel% equ 0 (
     echo ❌ Failed to copy rent_collection_trends.php
 )
 
+copy "payment_status_overview.php" "%BACKEND_DIR%\" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✅ Copied payment_status_overview.php
+) else (
+    echo ❌ Failed to copy payment_status_overview.php
+)
+
 echo.
 echo ========================================
 echo   Setup Complete!
