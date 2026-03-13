@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getToken } from "../../utils/auth";
+import TenantIssues from "./TenantIssues";
 
 const DashBoard = () => {
   // API Data State
@@ -111,58 +112,7 @@ const DashBoard = () => {
     fetchTenantData();
   }, []);
   
-  // Fetch tenant issues
-  useEffect(() => {
-    const fetchTenantIssues = async () => {
-      try {
-        const token = getToken();
-        if (!token) {
-          setIssuesError('No authentication token found');
-          setLoadingIssues(false);
-          return;
-        }
 
-        const response = await fetch('http://localhost/plaza_management_system_backend/fetch_tenant_issues.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const responseText = await response.text();
-        
-        if (!responseText || responseText.trim() === '') {
-          throw new Error('Empty response from server');
-        }
-
-        let result;
-        try {
-          result = JSON.parse(responseText);
-        } catch (parseError) {
-          throw new Error('Invalid response format');
-        }
-
-        if (result.status === 'success') {
-          setTenantIssues(result.data || []);
-          console.log('Tenant Issues:', result.data);
-        } else {
-          setIssuesError(result.message || 'Failed to fetch issues');
-        }
-      } catch (err) {
-        console.error('Issues fetch error:', err);
-        setIssuesError('Failed to load issues. Please try again.');
-      } finally {
-        setLoadingIssues(false);
-      }
-    };
-
-    fetchTenantIssues();
-  }, []);
   
   // Fetch financial summary
   useEffect(() => {
@@ -487,10 +437,10 @@ const DashBoard = () => {
         setIssueDescription('');
         setIssueSuccess(true);
         
-        // Refresh issues list after successful submission
+        // Trigger issues refresh after successful submission
         setTimeout(() => {
-          window.location.reload(); // Refresh to show new issue
-        }, 2000);
+          setIssuesRefreshTrigger(prev => prev + 1);
+        }, 1000);
         
         // Hide success message after 5 seconds
         setTimeout(() => {
@@ -549,10 +499,8 @@ const DashBoard = () => {
   const [issueError, setIssueError] = useState('');
   const [issueSuccess, setIssueSuccess] = useState(false);
   
-  // Tenant issues states
-  const [tenantIssues, setTenantIssues] = useState([]);
-  const [loadingIssues, setLoadingIssues] = useState(true);
-  const [issuesError, setIssuesError] = useState('');
+  // Tenant issues refresh trigger
+  const [issuesRefreshTrigger, setIssuesRefreshTrigger] = useState(0);
   
   // Financial summary states
   const [financialData, setFinancialData] = useState(null);
@@ -929,94 +877,7 @@ const DashBoard = () => {
           My Issues
         </h1>
         
-        {/* Loading Issues */}
-        {loadingIssues && (
-          <div className="flex items-center justify-center py-8">
-            <div className="flex items-center gap-3 text-blue-600">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Loading your issues...</span>
-            </div>
-          </div>
-        )}
-        
-        {/* Issues Error */}
-        {issuesError && !loadingIssues && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            <span>{issuesError}</span>
-          </div>
-        )}
-        
-        {/* Issues List */}
-        {!loadingIssues && !issuesError && (
-          <div className="space-y-4">
-            {tenantIssues.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="text-lg">No issues reported yet</p>
-                <p className="text-sm">Use the form above to report any problems</p>
-              </div>
-            ) : (
-              tenantIssues.map((issue, index) => (
-                <div key={index} className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
-                  {/* Issue Header */}
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5 text-blue-600" />
-                      <span className="font-semibold text-gray-800">Issue #{issue.id || index + 1}</span>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      issue.issue_status === 'resolved' || issue.status === 'resolved'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {issue.issue_status === 'resolved' || issue.status === 'resolved' ? 'Resolved' : 'Pending'}
-                    </div>
-                  </div>
-                  
-                  {/* Issue Description */}
-                  <div className="mb-3">
-                    <h4 className="font-medium text-gray-700 mb-2">Issue Description:</h4>
-                    <p className="text-gray-600 bg-gray-50 p-3 rounded border">
-                      {issue.issue_description || issue.description}
-                    </p>
-                  </div>
-                  
-                  {/* Issue Date */}
-                  {issue.created_at && (
-                    <div className="mb-3">
-                      <span className="text-sm text-gray-500">
-                        Reported on: {new Date(issue.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Resolved Issue Highlight */}
-                  {(issue.issue_status === 'resolved' || issue.status === 'resolved') && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        <span className="font-semibold text-green-800">
-                          Your issue has been resolved by the admin.
-                        </span>
-                      </div>
-                      
-                      {/* Admin Response */}
-                      {(issue.admin_response || issue.response) && (
-                        <div className="mt-3">
-                          <h5 className="font-medium text-green-700 mb-2">Admin Response:</h5>
-                          <p className="text-green-700 bg-green-100 p-3 rounded border border-green-200">
-                            {issue.admin_response || issue.response}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        )}
+        <TenantIssues refreshTrigger={issuesRefreshTrigger} />
       </div>
       {/* ============================================================ */}
       {/* Financial Summary Cards */}

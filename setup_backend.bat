@@ -73,6 +73,20 @@ if %errorlevel% equ 0 (
     echo ❌ Failed to copy payment_status_overview.php
 )
 
+copy "recent_activity.php" "%BACKEND_DIR%\" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✅ Copied recent_activity.php
+) else (
+    echo ❌ Failed to copy recent_activity.php
+)
+
+copy "fetch_tenant_issues.php" "%BACKEND_DIR%\" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✅ Copied fetch_tenant_issues.php
+) else (
+    echo ❌ Failed to copy fetch_tenant_issues.php
+)
+
 echo.
 echo ========================================
 echo   Setup Complete!

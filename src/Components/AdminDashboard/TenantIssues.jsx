@@ -31,6 +31,26 @@ const TenantIssues = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [resolvingIssues, setResolvingIssues] = useState(new Set());
   
+  // Admin response states
+  const [responseModal, setResponseModal] = useState({ show: false, issueId: null, issueDetails: null });
+  const [adminResponse, setAdminResponse] = useState('');
+  const [sendingResponse, setSendingResponse] = useState(false);
+  
+  // Recent Activities states
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [activityError, setActivityError] = useState(null);
+  
+  // Toast notification state
+  const [toast, setToast] = useState({ show: false, message: '', type: '' });
+
+  // Show toast notification
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: '' });
+    }, 3000);
+  };
+  
   // Fetch all issues function (extracted for reuse)
   const fetchIssues = async () => {
     try {
@@ -89,48 +109,121 @@ const TenantIssues = () => {
     }
   };
 
-  // Fetch all issues
-  useEffect(() => {
-    fetchIssues();
-  }, []);
-  
-  // Fetch unread count
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      try {
-        const token = getToken();
-        if (!token) return;
-
-        const response = await fetch('http://localhost/plaza_management_system_backend/unread_issues_count.php', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.status === 'success') {
-            setUnreadCount(result.count || 0);
-          }
-        }
-      } catch (err) {
-        console.error('Unread count fetch error:', err);
+  // Send admin response function
+  const sendAdminResponse = async () => {
+    if (!adminResponse.trim()) {
+      showToast('Please enter a response before sending.', 'error');
+      return;
+    }
+    
+    setSendingResponse(true);
+    
+    try {
+      const token = getToken();
+      if (!token) {
+        showToast('Authentication required. Please login again.', 'error');
+        return;
       }
-    };
-
-    fetchUnreadCount();
-  }, []);
+      
+      const response = await fetch('http://localhost/plaza_management_system_backend/respond_tenant_issue.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          issue_id: responseModal.issueId,
+          admin_response: adminResponse.trim()
+        })
+      });
+      
+      if (!response.ok) {
+        if (response.status === 400) {
+          throw new Error('Invalid request data');
+        } else if (response.status === 401) {
+          throw new Error('Unauthorized access');
+        } else if (response.status === 404) {
+          throw new Error('Issue not found');
+        } else if (response.status === 500) {
+          throw new Error('Server error. Please try again later.');
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      }
+      
+      const responseText = await response.text();
+      
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Empty response from server');
+      }
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error('Invalid JSON response from server');
+      }
+      
+      if (result.status === 'success') {
+        // Update local state - add admin response and mark as resolved
+        setIssues(prevIssues => prevIssues.map(issue => {
+          const matchesId = (issue.id === responseModal.issueId) || (issue.issue_id === responseModal.issueId);
+          if (matchesId) {
+            return { 
+              ...issue, 
+              admin_response: adminResponse.trim(),
+              issue_status: 'resolved', 
+              status: 'resolved',
+              admin_read: 1
+            };
+          }
+          return issue;
+        }));
+        
+        // Close modal and reset form
+        setResponseModal({ show: false, issueId: null, issueDetails: null });
+        setAdminResponse('');
+        
+        showToast('Response sent successfully', 'success');
+        
+        // Update unread count if this was an unread issue
+        const issueToUpdate = issues.find(issue => 
+          (issue.id === responseModal.issueId) || (issue.issue_id === responseModal.issueId)
+        );
+        if (issueToUpdate && issueToUpdate.admin_read === 0) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      } else {
+        showToast(result.message || 'Failed to send response', 'error');
+      }
+    } catch (err) {
+      console.error('Send response error:', err);
+      
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        showToast('Network error: Unable to connect to server', 'error');
+      } else {
+        showToast(err.message || 'Failed to send response. Please try again.', 'error');
+      }
+    } finally {
+      setSendingResponse(false);
+    }
+  };
   
-  // Toast notification state
-  const [toast, setToast] = useState({ show: false, message: '', type: '' });
-
-  // Show toast notification
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => {
-      setToast({ show: false, message: '', type: '' });
-    }, 3000);
+  // Open response modal
+  const openResponseModal = (issue) => {
+    const issueId = issue.id || issue.issue_id;
+    setResponseModal({ 
+      show: true, 
+      issueId: issueId, 
+      issueDetails: issue 
+    });
+    setAdminResponse('');
+  };
+  
+  // Close response modal
+  const closeResponseModal = () => {
+    setResponseModal({ show: false, issueId: null, issueDetails: null });
+    setAdminResponse('');
   };
 
   // Resolve issue function
@@ -285,17 +378,55 @@ const TenantIssues = () => {
       return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
     }
   };
+
+  // Fetch all issues
+  useEffect(() => {
+    fetchIssues();
+  }, []);
   
-  const recentActivities = [
-    { id: 1, action: 'Tenant T-101 paid rent for December', time: '2 hours ago', type: 'payment' },
-    { id: 2, action: 'New tenant registered: Shop S-205', time: '5 hours ago', type: 'registration' },
-    { id: 3, action: 'Rent reminder sent to 5 tenants', time: '1 day ago', type: 'notification' },
-    { id: 4, action: 'Tenant T-089 payment overdue', time: '2 days ago', type: 'alert' },
-    { id: 5, action: 'Monthly report generated', time: '3 days ago', type: 'report' },
-    { id: 6, action: 'Tenant T-043 updated contact info', time: '4 days ago', type: 'update' },
-  ];
+  // Fetch recent activities
+  useEffect(() => {
+    fetch("http://localhost/plaza_management_system_backend/recent_activity.php")
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          setRecentActivities(data.activities);
+        } else {
+          setActivityError("Failed to load activities");
+        }
+      })
+      .catch(() => {
+        setActivityError("Failed to load activities");
+      });
+  }, []);
+  
+  // Fetch unread count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const token = getToken();
+        if (!token) return;
 
+        const response = await fetch('http://localhost/plaza_management_system_backend/unread_issues_count.php', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
+        if (response.ok) {
+          const result = await response.json();
+          if (result.status === 'success') {
+            setUnreadCount(result.count || 0);
+          }
+        }
+      } catch (err) {
+        console.error('Unread count fetch error:', err);
+      }
+    };
+
+    fetchUnreadCount();
+  }, []);
 
   return (
     <div className='flex flex-col w-full pl-6'>
@@ -416,15 +547,31 @@ const TenantIssues = () => {
                         {issue.issue_description || issue.description || 'No description provided'}
                       </p>
                       
+                      {/* Show admin response if exists */}
+                      {(issue.admin_response) && (
+                        <div className="bg-green-50 border border-green-200 p-3 rounded-md mt-2 ml-2">
+                          <p className="text-sm font-medium text-green-900 mb-1">Admin Response:</p>
+                          <p className="text-sm text-green-800">{issue.admin_response}</p>
+                        </div>
+                      )}
+                      
                       {!isResolved && (
                         <div className='flex gap-2 pt-3'>
+                          <button 
+                            onClick={() => openResponseModal(issue)}
+                            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 active:scale-95 cursor-pointer transition-all text-sm"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            Send Response
+                          </button>
+                          
                           <button 
                             onClick={() => resolveIssue(issueId)}
                             disabled={isResolving}
                             className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm transition-all ${
                               isResolving 
                                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95 cursor-pointer'
+                                : 'bg-green-600 text-white hover:bg-green-700 active:scale-95 cursor-pointer'
                             }`}
                           >
                             {isResolving ? (
@@ -458,45 +605,132 @@ const TenantIssues = () => {
           </div>
         )}
       </div>
-    {/* Charts Row */}
-        <div className=' mt-2 grid grid-cols-1 md:grid-cols-2 gap-6'>
-          <RentTrends/>
-          <PaymentStatus/>
-
-        </div>
-
-        <div className='border mt-2 border-gray-300 rounded bg-white'>
-          {/* Recent Activity part */}
-          <div className="flex items-center p-3 border-b border-gray-300 gap-2">
-            <Activity className="w-5 h-5 text-blue-600" />
-            <h3 className="text-gray-900">Recent Activity</h3>
-          </div>
-
-          <div id='custom-scrollbar' className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
-            {recentActivities.map((activity) => (
-              <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start gap-3">
-                  <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                    activity.type === 'payment' ? 'bg-green-500' :
-                    activity.type === 'alert' ? 'bg-red-500' :
-                    activity.type === 'notification' ? 'bg-blue-500' :
-                    'bg-gray-400'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-gray-900">{activity.action}</p>
-                    <p className="text-gray-500 text-sm mt-1">{activity.time}</p>
-                  </div>
+      
+      {/* Admin Response Modal */}
+      {responseModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Send Response to Tenant</h3>
+              <button 
+                onClick={closeResponseModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {/* Issue Details */}
+            {responseModal.issueDetails && (
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="w-5 h-5 text-blue-600" />
+                  <h4 className="font-medium text-gray-900">
+                    Issue from {responseModal.issueDetails.tenant_name || 'Unknown'}
+                  </h4>
+                </div>
+                <p className="text-gray-700 text-sm mb-2">
+                  Shop: {responseModal.issueDetails.shop_number || 'N/A'} | 
+                  Tenant ID: {responseModal.issueDetails.tenant_id || 'N/A'}
+                </p>
+                <div className="bg-white p-3 rounded border">
+                  <p className="text-gray-800">
+                    {responseModal.issueDetails.issue_description || responseModal.issueDetails.description || 'No description provided'}
+                  </p>
                 </div>
               </div>
-            ))}
+            )}
+            
+            {/* Response Textarea */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Your Response *
+              </label>
+              <textarea
+                value={adminResponse}
+                onChange={(e) => setAdminResponse(e.target.value)}
+                placeholder="Type your response to the tenant here..."
+                rows={6}
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                disabled={sendingResponse}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                This response will be visible to the tenant and will mark the issue as resolved.
+              </p>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={closeResponseModal}
+                disabled={sendingResponse}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={sendAdminResponse}
+                disabled={sendingResponse || !adminResponse.trim()}
+                className={`px-6 py-2 rounded-lg transition-all flex items-center gap-2 ${
+                  sendingResponse || !adminResponse.trim()
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+                }`}
+              >
+                {sendingResponse ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="w-4 h-4" />
+                    Send Response
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+        </div>
+      )}
 
+      {/* Charts Row */}
+      <div className=' mt-2 grid grid-cols-1 md:grid-cols-2 gap-6'>
+        <RentTrends/>
+        <PaymentStatus/>
+      </div>
+
+      <div className='border mt-2 border-gray-300 rounded bg-white'>
+        {/* Recent Activity part */}
+        <div className="flex items-center p-3 border-b border-gray-300 gap-2">
+          <Activity className="w-5 h-5 text-blue-600" />
+          <h3 className="text-gray-900">Recent Activity</h3>
         </div>
 
+        {activityError && (
+          <p className="text-red-500 p-3">{activityError}</p>
+        )}
 
-
+        <div id='custom-scrollbar' className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+          {recentActivities.map((activity) => (
+            <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors">
+              <div className="flex items-start gap-3">
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                  activity.type === 'payment' ? 'bg-green-500' :
+                  activity.type === 'alert' ? 'bg-red-500' :
+                  activity.type === 'notification' ? 'bg-blue-500' :
+                  'bg-gray-400'
+                }`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-900">{activity.action}</p>
+                  <p className="text-gray-500 text-sm mt-1">{activity.time}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
-
   )
 }
 
