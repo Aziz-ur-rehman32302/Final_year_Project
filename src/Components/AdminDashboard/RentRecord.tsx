@@ -1,5 +1,5 @@
 import { FileText, Search, Filter, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const RentRecord = () => {
 // =======================================================================
@@ -18,18 +18,44 @@ const RentRecord = () => {
 
 // =======================================================================
 
-const initialRentRecords: TenantRent[] = [
-  { id: '1', tenantId: 'T-101', tenantName: 'John Smith', shopNumber: 'S-101', rentMonth: 'December 2025', dueAmount: 2500, paymentStatus: 'Paid', dueDate: '2025-12-05', paidDate: '2025-12-03' },
-  { id: '2', tenantId: 'T-102', tenantName: 'Sarah Johnson', shopNumber: 'S-102', rentMonth: 'December 2025', dueAmount: 3000, paymentStatus: 'Unpaid', dueDate: '2025-12-05' },
-  { id: '3', tenantId: 'T-103', tenantName: 'Michael Brown', shopNumber: 'S-201', rentMonth: 'December 2025', dueAmount: 2800, paymentStatus: 'Overdue', dueDate: '2025-12-05' },
-  { id: '4', tenantId: 'T-104', tenantName: 'Emily Davis', shopNumber: 'S-202', rentMonth: 'December 2025', dueAmount: 2500, paymentStatus: 'Paid', dueDate: '2025-12-05', paidDate: '2025-12-04' },
-  { id: '5', tenantId: 'T-105', tenantName: 'David Wilson', shopNumber: 'S-203', rentMonth: 'December 2025', dueAmount: 3200, paymentStatus: 'Unpaid', dueDate: '2025-12-05' },
-  { id: '6', tenantId: 'T-106', tenantName: 'Lisa Martinez', shopNumber: 'S-301', rentMonth: 'December 2025', dueAmount: 2700, paymentStatus: 'Paid', dueDate: '2025-12-05', paidDate: '2025-12-02' },
-  { id: '7', tenantId: 'T-107', tenantName: 'James Garcia', shopNumber: 'S-302', rentMonth: 'November 2025', dueAmount: 2900, paymentStatus: 'Overdue', dueDate: '2025-12-05' },
-  { id: '8', tenantId: 'T-108', tenantName: 'Jennifer Taylor', shopNumber: 'S-303', rentMonth: 'December 2025', dueAmount: 2600, paymentStatus: 'Unpaid', dueDate: '2025-12-05' },
-];
-// -------------------------------------------------------------------
- const [rentRecords] = useState<TenantRent[]>(initialRentRecords);
+const initialRentRecords: TenantRent[] = [];
+
+// =======================================================================
+
+ const [rentRecords, setRentRecords] = useState<TenantRent[]>(initialRentRecords);
+ const [isLoadingRecords, setIsLoadingRecords] = useState<boolean>(true);
+ const [recordsError, setRecordsError] = useState<string>('');
+
+ // Fetch rent records from API
+ useEffect(() => {
+   const fetchRentRecords = async () => {
+     try {
+       setIsLoadingRecords(true);
+       setRecordsError('');
+       
+       const response = await fetch('http://localhost/plaza_management_system_backend/rent_records.php');
+       
+       if (!response.ok) {
+         throw new Error('Failed to fetch rent records');
+       }
+       
+       const data = await response.json();
+       
+       if (data.status === 'success' && Array.isArray(data.records)) {
+         setRentRecords(data.records);
+       } else {
+         throw new Error('Invalid API response format');
+       }
+     } catch (err) {
+       console.error('Error fetching rent records:', err);
+       setRecordsError('Failed to load rent records. Please try again.');
+     } finally {
+       setIsLoadingRecords(false);
+     }
+   };
+
+   fetchRentRecords();
+ }, []);
 // ----------------------------------------------------------------------
 
 
@@ -62,6 +88,10 @@ const initialRentRecords: TenantRent[] = [
   const [searchvalue, setsearchvalue] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');//month dropdown ke liye
   const [selectedStatus, setSelectedStatus] = useState(''); // status dropdown ke liye
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 5;
 
   const filterRentRecords=rentRecords.filter((dets)=>{
     
@@ -94,24 +124,102 @@ const initialRentRecords: TenantRent[] = [
     
    })
 
+ // Pagination logic
+ const totalRecords = filterRentRecords.length;
+ const totalPages = Math.ceil(totalRecords / recordsPerPage);
+ const startIndex = (currentPage - 1) * recordsPerPage;
+ const endIndex = startIndex + recordsPerPage;
+ const currentRecords = filterRentRecords.slice(startIndex, endIndex);
+
+ // Debug info (remove after testing)
+ console.log('Debug Info:', {
+   totalRecords,
+   totalPages,
+   currentPage,
+   recordsPerPage,
+   currentRecordsLength: currentRecords.length,
+   allRecordsLength: rentRecords.length
+ });
+
+ // Reset to first page when filters change
+ const resetPagination = () => {
+   setCurrentPage(1);
+ };
+
+ // Handle page change
+ const handlePageChange = (page: number) => {
+   setCurrentPage(page);
+ };
+
+ // Generate page numbers for pagination
+ const getPageNumbers = () => {
+   const pages = [];
+   const maxVisiblePages = 5;
+   
+   if (totalPages <= maxVisiblePages) {
+     for (let i = 1; i <= totalPages; i++) {
+       pages.push(i);
+     }
+   } else {
+     if (currentPage <= 3) {
+       for (let i = 1; i <= 4; i++) pages.push(i);
+       pages.push('...');
+       pages.push(totalPages);
+     } else if (currentPage >= totalPages - 2) {
+       pages.push(1);
+       pages.push('...');
+       for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+     } else {
+       pages.push(1);
+       pages.push('...');
+       for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+       pages.push('...');
+       pages.push(totalPages);
+     }
+   }
+   return pages;
+ };
+
  // =====================================================================
-  //  calculate Total Amount of Rent 
+  // API State Management
+  const [TotalAmount, setTotalAmount] = useState<number>(0);
+  const [totalPaidAmount, setTotalPaidAmount] = useState<number>(0);
+  const [total_UnPaidAmount, setTotal_UnPaidAmount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
 
-  const TotalAmount =filterRentRecords
-  .filter((record) => record.paymentStatus === 'Paid'||record.paymentStatus === 'Unpaid'||record.paymentStatus === 'Overdue')
-  .reduce((sum, e) => sum + e.dueAmount, 0);
+  // Fetch rent summary data from API
+  useEffect(() => {
+    const fetchRentSummary = async () => {
+      try {
+        setIsLoading(true);
+        setError('');
+        
+        const response = await fetch('http://localhost/plaza_management_system_backend/rent_summary.php');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch data');
+        }
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          setTotalAmount(data.TotalAmount || 0);
+          setTotalPaidAmount(data.totalPaidAmount || 0);
+          setTotal_UnPaidAmount(data.totalUnPaidAmount || 0);
+        } else {
+          throw new Error('API returned error status');
+        }
+      } catch (err) {
+        console.error('Error fetching rent summary:', err);
+        setError('Failed to load data. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  // if (rentRecords.paymentStatus === 'paid') {
-    
-  const totalPaidAmount = filterRentRecords
-  .filter((record) => record.paymentStatus === 'Paid')
-  .reduce((sum, e) => sum + e.dueAmount, 0);
-
-  // if (rentRecords.paymentStatus === 'paid') {
-
-  const total_UnPaidAmount = filterRentRecords
-  .filter((record) => record.paymentStatus === 'Unpaid'||record.paymentStatus === 'Overdue')
-  .reduce((sum, e) => sum + e.dueAmount, 0);
+    fetchRentSummary();
+  }, []);
 
   
 // ========================================================================
@@ -137,21 +245,29 @@ const initialRentRecords: TenantRent[] = [
         </div>
         {/* Summary Cards */}
         <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2'>
-            {/* 1st Card  */}
-            <div className="bg-blue-600 rounded-lg p-4 text-white hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
-            <div className="text-sm text-blue-100 mb-1">Total Due</div>
-            <div className="text-2xl font-medium">${TotalAmount.toLocaleString()}</div>
-          </div>
-          {/* 2nd Card  */}
-          <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
-            <div className="text-sm text-gray-600 mb-1">Total Paid</div>
-            <div className="text-2xl font-medium text-green-600">${totalPaidAmount.toLocaleString()}</div>
-          </div>
-          {/* 3rd Card  */}
-          <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
-            <div className="text-sm text-gray-600 mb-1">Total Unpaid</div>
-            <div className="text-2xl font-medium text-red-600">${total_UnPaidAmount.toLocaleString()}</div>
-          </div>
+            {isLoading ? (
+              <div className="col-span-3 text-center py-8 text-gray-600">Loading...</div>
+            ) : error ? (
+              <div className="col-span-3 text-center py-8 text-red-600">{error}</div>
+            ) : (
+              <>
+                {/* 1st Card  */}
+                <div className="bg-blue-600 rounded-lg p-4 text-white hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
+                <div className="text-sm text-blue-100 mb-1">Total Due</div>
+                <div className="text-2xl font-medium">${TotalAmount.toLocaleString()}</div>
+              </div>
+              {/* 2nd Card  */}
+              <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
+                <div className="text-sm text-gray-600 mb-1">Total Paid</div>
+                <div className="text-2xl font-medium text-green-600">${totalPaidAmount.toLocaleString()}</div>
+              </div>
+              {/* 3rd Card  */}
+              <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
+                <div className="text-sm text-gray-600 mb-1">Total Unpaid</div>
+                <div className="text-2xl font-medium text-red-600">${total_UnPaidAmount.toLocaleString()}</div>
+              </div>
+              </>
+            )}
         </div>
 
         {/* Filters */}
@@ -165,6 +281,7 @@ const initialRentRecords: TenantRent[] = [
                           value={searchvalue}
                           onChange={(e)=>{
                             setsearchvalue(e.target.value)
+                            resetPagination();
                           }}
                           placeholder="Search by tenant name, ID, or shop..."
                           className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
@@ -178,14 +295,27 @@ const initialRentRecords: TenantRent[] = [
                     value={selectedMonth}
                     onChange={(e)=>{
                       setSelectedMonth(e.target.value)
-                      
+                      resetPagination();
                     }}  
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     >   
                         <option value="">All Months</option>
-                        <option value="December 2025">December 2025</option>
-                        <option value="November 2025">November 2025</option>
-                        <option value="October 2025">October 2025</option>
+                        {(() => {
+                          const months = [
+                            'January', 'February', 'March', 'April', 'May', 'June',
+                            'July', 'August', 'September', 'October', 'November', 'December'
+                          ];
+                          const currentYear = new Date().getFullYear();
+                          const years = [currentYear - 1, currentYear, currentYear + 1]; // Previous, current, and next year
+                          
+                          return years.flatMap(year => 
+                            months.map(month => (
+                              <option key={`${month}-${year}`} value={`${month} ${year}`}>
+                                {month} {year}
+                              </option>
+                            ))
+                          );
+                        })()}
                     </select>
                 </div>
 
@@ -197,10 +327,9 @@ const initialRentRecords: TenantRent[] = [
                         value={selectedStatus}
                         onChange={(e)=>{
                           setSelectedStatus(e.target.value)
-                          console.log(e.target.value);
-                          
+                          resetPagination();
                         }}  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none">
-                          <option value=" ">All Status</option>
+                          <option value="">All Status</option>
                           <option value="Paid">Paid</option>
                           <option value="Unpaid">Unpaid</option>
                           <option value="Overdue">Overdue</option>
@@ -214,44 +343,58 @@ const initialRentRecords: TenantRent[] = [
                 <div className="bg-white rounded-lg border mt-6 border-gray-200 overflow-hidden">
                   <div id='custom-scrollbar' className="overflow-x-auto">
 
-                    <table className="w-full">
+                    <table className="w-full min-w-[1000px]">
                       <thead className="bg-gray-50 border-b border-gray-200">
                     
                         <tr>
-                          <th className="px-6 py-3 text-left text-gray-700">Tenant ID</th>
-                          <th className="px-6 py-3 text-left text-gray-700">Tenant Name</th>
-                          <th className="px-6 py-3 text-left text-gray-700">Shop</th>
-                          <th className="px-6 py-3 text-left text-gray-700">Rent Month</th>
-                          <th className="px-6 py-3 text-left text-gray-700">Due Amount</th>
-                          <th className="px-6 py-3 text-left text-gray-700">Due Date</th>
-                          <th className="px-6 py-3 text-left text-gray-700">Status</th>
-                          <th className="px-6 py-3 text-left text-gray-700">Paid Date</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Tenant ID</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Tenant Name</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Shop</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Rent Month</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Due Amount</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Due Date</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Status</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Paid Date</th>
                         </tr>
                       </thead>
-                       <tbody className='divide-gray-400 divide-y'>
-                          {filterRentRecords.length > 0 ? (
-                            filterRentRecords.map((record, index) => (
+                       <tbody className='divide-y divide-gray-200'>
+                          {isLoadingRecords ? (
+                            <tr>
+                              <td colSpan={8} className='text-center py-12 text-lg text-gray-600'>
+                                Loading...
+                              </td>
+                            </tr>
+                          ) : recordsError ? (
+                            <tr>
+                              <td colSpan={8} className='text-center py-12 text-lg text-red-600'>
+                                {recordsError}
+                              </td>
+                            </tr>
+                          ) : currentRecords.length > 0 ? (
+                            currentRecords.map((record, index) => (
                               
-                              <tr key={record.id} className='hover:bg-gray-100 transition-colors'>
-                                <td className='px-7 py-4 text-gray-900'>{record.tenantId}</td>
+                              <tr key={record.id} className='hover:bg-gray-50 transition-colors'>
+                                <td className='px-3 py-2 text-base text-gray-900'>{record.tenantId}</td>
                                
-                                <td className='px-7 py-2 text-gray-900'>{record.tenantName}</td>
-                                <td className='px-7 py-2 text-gray-900'>{record.shopNumber}</td>
-                                <td className='px-7 py-2 text-gray-900'>{record.rentMonth}</td>
-                                <td className='px-7 py-2 text-gray-900'>{record.dueAmount}</td>
-                                <td className='px-7 py-2 text-gray-900'>{record.dueDate}</td>
+                                <td className='px-3 py-2 text-base text-gray-900'>{record.tenantName}</td>
+                                <td className='px-3 py-2 text-base text-gray-900'>{record.shopNumber}</td>
+                                <td className='px-3 py-2 text-base text-gray-900'>{record.rentMonth}</td>
+                                <td className='px-3 py-2 text-base text-gray-900'>${record.dueAmount.toLocaleString()}</td>
+                                <td className='px-3 py-2 text-base text-gray-900'>{record.dueDate}</td>
                                
-                                <td className={`${assignStatusColor(record.paymentStatus).color} ${assignStatusColor(record.paymentStatus).bg} rounded-2xl flex gap-1 w-fit mt-4 items-center px-4 py-1 ml-1 text-sm text-gray-900`}>
-                                  <span>{assignStatusColor(record.paymentStatus).icon}</span>
-                                  <span>{record.paymentStatus}</span>
+                                <td className='px-3 py-2'>
+                                  <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${assignStatusColor(record.paymentStatus).color} ${assignStatusColor(record.paymentStatus).bg}`}>
+                                    {assignStatusColor(record.paymentStatus).icon}
+                                    {record.paymentStatus}
+                                  </span>
                                 </td>
 
-                                <td className='px-7 py-2 text-gray-900'>{record.paidDate}</td>
+                                <td className='px-3 py-2 text-base text-gray-900'>{record.paidDate || '-'}</td>
                               </tr>
                                 ))
                                 ) : (
                             <tr>
-                            <td colSpan="8" className='text-center py-4 text-gray-500'>
+                            <td colSpan={8} className='text-center py-12 text-lg text-gray-500'>
                               No tenants found
                             </td>
                           </tr>
@@ -262,6 +405,66 @@ const initialRentRecords: TenantRent[] = [
                     </table>
 
                   </div>
+                  
+                  {/* Pagination */}
+                  {!isLoadingRecords && !recordsError && totalRecords > 0 && (
+                    <div className="px-8 py-6 border-t border-gray-200 bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        {/* Records info */}
+                        <div className="text-base font-medium text-gray-700">
+                          Showing <span className="font-bold text-blue-600">{startIndex + 1}</span> to <span className="font-bold text-blue-600">{Math.min(endIndex, totalRecords)}</span> of <span className="font-bold text-blue-600">{totalRecords}</span> results
+                          <span className="text-sm text-gray-500 ml-2">(Page {currentPage} of {totalPages})</span>
+                        </div>
+                        
+                        {/* Pagination controls */}
+                        <div className="flex items-center space-x-2">
+                          {/* Previous button */}
+                          <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                              currentPage === 1
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 shadow-sm'
+                            }`}
+                          >
+                            Previous
+                          </button>
+                          
+                          {/* Page numbers */}
+                          {getPageNumbers().map((page, index) => (
+                            <button
+                              key={index}
+                              onClick={() => typeof page === 'number' && handlePageChange(page)}
+                              disabled={page === '...'}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                                page === currentPage
+                                  ? 'bg-blue-600 text-white shadow-lg transform scale-105'
+                                  : page === '...'
+                                  ? 'bg-transparent text-gray-400 cursor-default'
+                                  : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 shadow-sm'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+                          
+                          {/* Next button */}
+                          <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                              currentPage === totalPages
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 shadow-sm'
+                            }`}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
       
