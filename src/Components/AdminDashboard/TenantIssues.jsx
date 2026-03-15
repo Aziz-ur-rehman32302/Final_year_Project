@@ -63,6 +63,7 @@ const TenantIssues = () => {
 
       const response = await fetch('http://localhost/plaza_management_system_backend/fetch_all_issues.php', {
         method: 'GET',
+        credentials: 'include',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -127,6 +128,7 @@ const TenantIssues = () => {
       
       const response = await fetch('http://localhost/plaza_management_system_backend/respond_tenant_issue.php', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -241,6 +243,7 @@ const TenantIssues = () => {
       console.log('📡 Sending resolve request to API...');
       const response = await fetch('http://localhost/plaza_management_system_backend/resolve_issue.php', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -386,7 +389,9 @@ const TenantIssues = () => {
   
   // Fetch recent activities
   useEffect(() => {
-    fetch("http://localhost/plaza_management_system_backend/recent_activity.php")
+    fetch("http://localhost/plaza_management_system_backend/recent_activity.php", {
+      credentials: 'include'
+    })
       .then(res => res.json())
       .then(data => {
         if (data.status === "success") {
@@ -409,6 +414,7 @@ const TenantIssues = () => {
 
         const response = await fetch('http://localhost/plaza_management_system_backend/unread_issues_count.php', {
           method: 'GET',
+          credentials: 'include',
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -429,7 +435,7 @@ const TenantIssues = () => {
   }, []);
 
   return (
-    <div className='flex flex-col w-full pl-6'>
+    <div className='flex flex-col pr-4 w-full pl-6'>
       {/* Toast Notification */}
       {toast.show && (
         <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
@@ -446,7 +452,7 @@ const TenantIssues = () => {
         </div>
       )}
       
-      <div className='w-full py-4 border rounded border-gray-300'>
+      <div className='w-full  py-4 border rounded border-gray-300'>
         {/* Tenant Issues Header */}
         <div className='flex justify-between w-full border-b pb-4 border-gray-300 bg-white'>
           <div className='flex pl-4 gap-2 items-center'>

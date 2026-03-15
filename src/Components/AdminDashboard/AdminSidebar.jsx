@@ -55,10 +55,10 @@ const AdminSidebar = ({isVisible,toggledashboardButton}) => {
     
     return (
         
-        <div className='flex '>
+        <div className='flex w-[89%]'>
           
             
-          <div className={`${isVisible ? 'block' : 'hidden'}  border-r min-h-screen lg:block w-1/2 sm:w-1/3 lg:w-[22%] `}> 
+          <div className={`${isVisible ? 'block' : 'hidden'} border-r min-h-screen lg:block w-1/4 sm:w-1/3 lg:w-[200px] xl:w-[250px] flex-shrink-0`}> 
           
                 <div className='flex flex-col gap-4 py-5 pr-2 pl-4 '>
                     <h1 onClick={
@@ -91,15 +91,15 @@ const AdminSidebar = ({isVisible,toggledashboardButton}) => {
           </div>
           
            {showDashBoard &&(
-            <div className={`bg-gray-50 py-5  w-full  ${!isVisible ? 'block' : 'hidden'}  `}>
+            <div className={`bg-gray-50 py-5 flex-1 w-full lg:block ${isVisible ? 'hidden' : 'block'}`}>
              
             <AdminboardHeader/>
             
 
-            <div className='flex  gap-5'>
+            <div className='flex gap-5 w-full'>
               <Admin_Cards/>  
             </div>
-            <div className='flex w-[97%] '>
+            <div className='flex w-full'>
               <TenantIssues/>  
             </div>
           </div>
@@ -107,16 +107,16 @@ const AdminSidebar = ({isVisible,toggledashboardButton}) => {
 
            
            {openTenantRegistration && (
-            <div className={`w-full ${isVisible ? 'hidden' : 'block'}`}>
+            <div className={`flex-1 w-full ${isVisible ? 'hidden' : 'block'}`}>
                <TenantRegistration />
             </div>
           )} 
            
-           {showRentRecord && <div className={`w-full ${isVisible ? 'hidden' : 'block'}`}>
+           {showRentRecord && <div className={`flex-1 w-full ${isVisible ? 'hidden' : 'block'}`}>
               <RentRecord/>
            </div> }
 
-           {shownotificationsAdmin && <div className={`w-full ${isVisible ? 'hidden' : 'block'}`}>
+           {shownotificationsAdmin && <div className={`flex-1 w-full ${isVisible ? 'hidden' : 'block'}`}>
               <NotificationsAdmin/>
            </div> }
 

@@ -6,6 +6,11 @@ import {
   FileText,
   MessageSquare,
   Loader2,
+  Bell,
+  Clock,
+  Eye,
+  Mail,
+  Smartphone,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getToken } from "../../utils/auth";
@@ -225,6 +230,76 @@ const DashBoard = () => {
     fetchRentHistory();
   }, []);
   
+  // Fetch notifications for logged-in tenant
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setNotificationsLoading(true);
+        setNotificationsError('');
+        
+        const token = getToken();
+        if (!token) {
+          setNotificationsError('No authentication token found');
+          setNotificationsLoading(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost/plaza_management_system_backend/get_notifications.php', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: Failed to fetch notifications`);
+        }
+
+        const responseText = await response.text();
+        
+        if (!responseText) {
+          throw new Error('Empty response from server');
+        }
+
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch (parseError) {
+          throw new Error('Invalid response format');
+        }
+
+        if (result.status === 'success' || result.tenant_id) {
+          // Handle both response formats
+          const tenantIdFromResponse = result.tenant_id;
+          const notificationData = result.notifications || [];
+          const counts = result.counts || {
+            total: notificationData.length,
+            unread: notificationData.filter(n => n.status === 'unread').length,
+            read: notificationData.filter(n => n.status === 'read').length
+          };
+          
+          setTenantId(tenantIdFromResponse);
+          setNotifications(notificationData);
+          setNotificationCounts(counts);
+          
+          console.log('Notifications loaded for tenant:', tenantIdFromResponse);
+          console.log('Notifications:', notificationData);
+          console.log('Counts:', counts);
+        } else {
+          setNotificationsError(result.message || 'Failed to fetch notifications');
+        }
+      } catch (err) {
+        console.error('Notifications fetch error:', err);
+        setNotificationsError('Failed to load notifications. Please try again.');
+      } finally {
+        setNotificationsLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+  
   // Payment processing function
   const processPayment = async () => {
     if (!selectedPaymentMethod) {
@@ -370,6 +445,73 @@ const DashBoard = () => {
     }
   };
   
+  // Mark notification as read
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      setMarkingAsRead(notificationId.toString());
+      
+      const token = getToken();
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      const response = await fetch('http://localhost/plaza_management_system_backend/mark_notification_read.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          notification_id: notificationId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to mark notification as read`);
+      }
+
+      const responseText = await response.text();
+      
+      if (!responseText) {
+        throw new Error('Empty response from server');
+      }
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error('Invalid response format');
+      }
+
+      if (result.status === 'success') {
+        // Update local state optimistically
+        setNotifications(prev => 
+          prev.map(notification => 
+            notification.notification_id === notificationId 
+              ? { ...notification, status: 'read' }
+              : notification
+          )
+        );
+        
+        // Update counts dynamically
+        setNotificationCounts(prev => ({
+          ...prev,
+          unread: Math.max(0, prev.unread - 1),
+          read: prev.read + 1
+        }));
+        
+        console.log('Notification marked as read:', notificationId);
+      } else {
+        console.error('Failed to mark notification as read:', result.message);
+      }
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    } finally {
+      setMarkingAsRead('');
+    }
+  };
+  
   // Report Issue function
   const reportIssue = async (e) => {
     e.preventDefault();
@@ -492,6 +634,81 @@ const DashBoard = () => {
   const showPaymentMessage = () => {
     handlePayNowClick();
   };
+  
+  // Get notification type icon
+  const getNotificationIcon = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'reminder':
+        return <Clock className="w-5 h-5 text-blue-600" />;
+      case 'payment':
+        return <DollarSign className="w-5 h-5 text-green-600" />;
+      case 'overdue':
+        return <AlertCircle className="w-5 h-5 text-red-600" />;
+      case 'announcement':
+        return <Bell className="w-5 h-5 text-purple-600" />;
+      case 'new':
+        return <Bell className="w-5 h-5 text-blue-600" />;
+      default:
+        return <Bell className="w-5 h-5 text-gray-600" />;
+    }
+  };
+  
+  // Get notification type badge styling
+  const getNotificationBadge = (type) => {
+    const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize";
+    
+    switch (type?.toLowerCase()) {
+      case 'reminder':
+        return `${baseClasses} bg-blue-100 text-blue-800`;
+      case 'payment':
+        return `${baseClasses} bg-green-100 text-green-800`;
+      case 'overdue':
+        return `${baseClasses} bg-red-100 text-red-800`;
+      case 'announcement':
+        return `${baseClasses} bg-purple-100 text-purple-800`;
+      case 'new':
+        return `${baseClasses} bg-blue-100 text-blue-800`;
+      default:
+        return `${baseClasses} bg-gray-100 text-gray-800`;
+    }
+  };
+  
+  // Get delivery method icon
+  const getDeliveryIcon = (method) => {
+    switch (method?.toLowerCase()) {
+      case 'email':
+        return <Mail className="w-4 h-4 text-gray-600" />;
+      case 'sms':
+        return <Smartphone className="w-4 h-4 text-gray-600" />;
+      default:
+        return <Bell className="w-4 h-4 text-gray-600" />;
+    }
+  };
+  
+  // Format timestamp for notifications
+  const formatNotificationTime = (timestamp) => {
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+      if (diffInHours < 1) {
+        return 'Just now';
+      } else if (diffInHours < 24) {
+        return `${Math.floor(diffInHours)} hours ago`;
+      } else if (diffInHours < 48) {
+        return 'Yesterday';
+      } else {
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+        });
+      }
+    } catch {
+      return timestamp;
+    }
+  };
   //  --------------------------------------------------------
   // Issue reporting states
   const [issueDescription, setIssueDescription] = useState("");
@@ -511,6 +728,18 @@ const DashBoard = () => {
   const [rentHistory, setRentHistory] = useState([]);
   const [loadingRentHistory, setLoadingRentHistory] = useState(true);
   const [rentHistoryError, setRentHistoryError] = useState('');
+  
+  // Notification states
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [notificationsError, setNotificationsError] = useState('');
+  const [tenantId, setTenantId] = useState('');
+  const [notificationCounts, setNotificationCounts] = useState({
+    total: 0,
+    unread: 0,
+    read: 0
+  });
+  const [markingAsRead, setMarkingAsRead] = useState('');
   return (
     <div className="p-5 w-full">
       {/* Header */}
@@ -878,6 +1107,141 @@ const DashBoard = () => {
         </h1>
         
         <TenantIssues refreshTrigger={issuesRefreshTrigger} />
+      </div>
+      
+      {/* My Notifications Panel */}
+      <div className="border border-gray-200 p-4 mt-6 rounded-lg bg-gray-100">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="flex gap-3 text-lg font-semibold">
+            <Bell className="w-5 h-5 mt-0.5" />
+            My Notifications
+          </h1>
+          {/* New Notifications Count */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-600">Tenant ID: <span className="font-medium">{tenantId || 'Loading...'}</span></span>
+            {notificationCounts.unread > 0 && (
+              <div className="flex items-center gap-1 bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                <Bell className="w-3 h-3" />
+                <span className="font-medium">{notificationCounts.unread} New</span>
+              </div>
+            )}
+            <div className="text-xs text-gray-500">
+              Total: {notificationCounts.total} | Read: {notificationCounts.read}
+            </div>
+          </div>
+        </div>
+        
+        {/* Loading Notifications */}
+        {notificationsLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-3 text-blue-600">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Loading notifications...</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Notifications Error */}
+        {notificationsError && !notificationsLoading && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            <span>{notificationsError}</span>
+            <button 
+              onClick={() => window.location.reload()}
+              className="ml-auto bg-red-100 hover:bg-red-200 px-3 py-1 rounded text-sm transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        
+        {/* Notifications List */}
+        {!notificationsLoading && !notificationsError && (
+          <div className="space-y-3">
+            {notifications.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg font-medium">No notifications available.</p>
+                <p className="text-sm">You're all caught up!</p>
+              </div>
+            ) : (
+              notifications.map((notification) => (
+                <div
+                  key={notification.notification_id}
+                  className={`border rounded-lg p-4 transition-all duration-200 ${
+                    notification.status === 'unread' 
+                      ? 'border-blue-200 bg-blue-50 shadow-sm' 
+                      : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    {/* Type icon */}
+                    <div className="flex-shrink-0 mt-1">
+                      {getNotificationIcon(notification.type)}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className={`font-medium truncate ${
+                          notification.status === 'unread' ? 'text-gray-900' : 'text-gray-600'
+                        }`}>
+                          {notification.message?.substring(0, 50)}{notification.message?.length > 50 ? '...' : ''}
+                        </h3>
+                        <span className={getNotificationBadge(notification.type)}>
+                          {notification.type}
+                        </span>
+                        {notification.status === 'unread' && (
+                          <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                        )}
+                      </div>
+                      
+                      <p className={`text-sm mb-3 leading-relaxed ${
+                        notification.status === 'unread' ? 'text-gray-800' : 'text-gray-500'
+                      }`}>
+                        {notification.message}
+                      </p>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>{formatNotificationTime(notification.timestamp)}</span>
+                        </div>
+                        
+                        {/* Mark as read button */}
+                        {notification.status === 'unread' && (
+                          <button
+                            onClick={() => markNotificationAsRead(notification.notification_id)}
+                            disabled={markingAsRead === notification.notification_id.toString()}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {markingAsRead === notification.notification_id.toString() ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Marking...
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="w-3 h-3" />
+                                Click to mark as read
+                              </>
+                            )}
+                          </button>
+                        )}
+                        
+                        {notification.status === 'read' && (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 bg-gray-100 rounded-md">
+                            <CheckCircle className="w-3 h-3" />
+                            Read
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
       {/* ============================================================ */}
       {/* Financial Summary Cards */}

@@ -23,10 +23,11 @@ const AdminNavbar = ({toggleNavButton,isVisible}) => {
 
         const response = await fetch('http://localhost/plaza_management_system_backend/unread_issues_count.php', {
           method: 'GET',
+          credentials: 'include',
           headers: {
             'Authorization': `Bearer ${token}`,
           },
-        });
+        }).catch(() => ({ ok: false }));
 
         if (response.ok) {
           const result = await response.json();

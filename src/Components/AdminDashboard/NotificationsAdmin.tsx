@@ -20,62 +20,7 @@ interface Notification {
   sentDate: string;
 }
 
-const notificationHistory: Notification[] = [
-  {
-    id: "1",
-    type: "reminder",
-    recipient: "John Smith (T-101)",
-    message: "Rent due reminder for December",
-    channel: "Email",
-    status: "Sent",
-    sentDate: "2025-12-01 09:00 AM",
-  },
-  {
-    id: "2",
-    type: "reminder",
-    recipient: "Sarah Johnson (T-102)",
-    message: "Rent due reminder for December",
-    channel: "SMS",
-    status: "Sent",
-    sentDate: "2025-12-01 09:00 AM",
-  },
-  {
-    id: "3",
-    type: "overdue",
-    recipient: "Michael Brown (T-103)",
-    message: "Overdue payment alert",
-    channel: "Email",
-    status: "Sent",
-    sentDate: "2025-12-06 10:00 AM",
-  },
-  {
-    id: "4",
-    type: "payment",
-    recipient: "Emily Davis (T-104)",
-    message: "Payment received confirmation",
-    channel: "SMS",
-    status: "Sent",
-    sentDate: "2025-12-04 02:30 PM",
-  },
-  {
-    id: "5",
-    type: "reminder",
-    recipient: "David Wilson (T-105)",
-    message: "Rent due in 3 days",
-    channel: "Push",
-    status: "Sent",
-    sentDate: "2025-12-02 08:00 AM",
-  },
-  {
-    id: "6",
-    type: "overdue",
-    recipient: "James Garcia (T-107)",
-    message: "Overdue payment alert",
-    channel: "Email",
-    status: "Failed",
-    sentDate: "2025-12-06 10:00 AM",
-  },
-];
+
 
 
 
@@ -98,58 +43,80 @@ const NotificationsAdmin = () => {
 
   // Fetch notification statistics from API
   useEffect(() => {
+    let isMounted = true; // Prevent double API calls in StrictMode
+    
     const fetchNotificationStats = async () => {
       try {
         setLoading(true);
         setError('');
         
-        const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_logs.php');
+        const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_logs.php', {
+          method: 'GET',
+          credentials: 'include'
+        });
         
         if (!response.ok) {
-          throw new Error('Failed to fetch notification logs');
+          throw new Error(`HTTP ${response.status}`);
         }
         
-        const data = await response.json();
+        const text = await response.text();
         
-        if (data.status === 'success') {
-          const logs = data.logs || [];
-          
-          // Calculate statistics from logs
-          const total = logs.length;
-          const sent = logs.filter(item => item.status === "Sent").length;
-          const failed = logs.filter(item => item.status === "Failed").length;
-          
-          // Update states
-          setTotalCount(total);
-          setSentCount(sent);
-          setFailedCount(failed);
+        if (!text) {
+          throw new Error('Empty response');
+        }
+        
+        const data = JSON.parse(text);
+        
+        if (data.status === 'success' && isMounted) {
+          setTotalCount(data.total || 0);
+          setSentCount(data.sent || 0);
+          setFailedCount(data.failed || 0);
         } else {
-          throw new Error('API returned error status');
+          throw new Error(data.message || 'API returned error status');
         }
       } catch (err) {
         console.error('Error fetching notification statistics:', err);
-        setError('Failed to load statistics');
+        if (isMounted) {
+          setError('Server connection failed');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchNotificationStats();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Load existing settings on component mount
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchNotificationSettings = async () => {
       try {
-        const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_settings.php');
+        const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_settings.php', {
+          method: 'GET',
+          credentials: 'include'
+        });
         
         if (!response.ok) {
-          throw new Error('Failed to fetch notification settings');
+          throw new Error(`HTTP ${response.status}`);
         }
         
-        const data = await response.json();
+        const text = await response.text();
         
-        if (data.status === 'success') {
+        if (!text) {
+          throw new Error('Empty response');
+        }
+        
+        const data = JSON.parse(text);
+        
+        if (data.status === 'success' && isMounted) {
           setReminderDays(data.reminderDays || '3');
           setOverdueDays(data.overdueDays || '1');
           setEnableEmail(data.enableEmail !== undefined ? data.enableEmail : true);
@@ -162,6 +129,10 @@ const NotificationsAdmin = () => {
     };
 
     fetchNotificationSettings();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   {
@@ -173,7 +144,6 @@ const NotificationsAdmin = () => {
       setSettingsLoading(true);
       setSettingsError('');
       
-      // Prepare request payload
       const requestBody = {
         reminderDays: reminderDays,
         overdueDays: overdueDays,
@@ -182,63 +152,39 @@ const NotificationsAdmin = () => {
         enablePush: enablePush
       };
       
-      console.log('Sending notification settings:', requestBody);
-      
       const response = await fetch('http://localhost/plaza_management_system_backend/save_notification_settings.php', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody)
       });
       
-      console.log('Response status:', response.status, response.statusText);
-      
-      // Check if response is ok
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+        throw new Error(`HTTP ${response.status}`);
       }
       
-      // Parse JSON response safely
-      let data;
-      try {
-        const responseText = await response.text();
-        console.log('Raw response:', responseText);
-        
-        if (!responseText.trim()) {
-          throw new Error('Empty response from server');
-        }
-        
-        data = JSON.parse(responseText);
-        console.log('Parsed response data:', data);
-      } catch (parseError) {
-        console.error('JSON parsing error:', parseError);
-        throw new Error('Invalid JSON response from server');
+      const text = await response.text();
+      
+      if (!text) {
+        throw new Error('Empty response');
       }
       
-      // Handle backend response
+      const data = JSON.parse(text);
+      
       if (data.status === 'success') {
-        console.log('Settings saved successfully:', data.message);
         setShowSaveSuccess(true);
         setTimeout(() => setShowSaveSuccess(false), 3000);
       } else {
-        // Log backend error and throw
-        console.error('Backend error:', data.message || 'Unknown backend error');
-        throw new Error(data.message || 'Failed to save settings - backend error');
+        throw new Error(data.message || 'Failed to save settings');
       }
     } catch (err) {
       console.error('Error saving notification settings:', err);
-      
-      // Set user-friendly error message
-      if (err instanceof Error) {
-        setSettingsError(err.message);
-      } else {
-        setSettingsError('An unexpected error occurred while saving settings');
-      }
+      setSettingsError('Server connection failed');
     } finally {
       setSettingsLoading(false);
     }
-    // ====================================================================
   };
 
   const getChannelIcon = (channel: string) => {
@@ -285,33 +231,52 @@ const NotificationsAdmin = () => {
 
     // Fetch notification history from API
     useEffect(() => {
+      let isMounted = true;
+      
       const fetchNotificationHistory = async () => {
         try {
           setNotificationsLoading(true);
           setNotificationsError('');
           
-          const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_logs.php');
+          const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_logs.php', {
+            method: 'GET',
+            credentials: 'include'
+          });
           
           if (!response.ok) {
-            throw new Error('Failed to fetch notification logs');
+            throw new Error(`HTTP ${response.status}`);
           }
           
-          const data = await response.json();
+          const text = await response.text();
           
-          if (data.status === 'success') {
+          if (!text) {
+            throw new Error('Empty response');
+          }
+          
+          const data = JSON.parse(text);
+          
+          if (data.status === 'success' && isMounted) {
             setNotifications(data.logs || []);
           } else {
             throw new Error(data.message || 'Failed to load notification logs');
           }
         } catch (err) {
           console.error('Error fetching notification logs:', err);
-          setNotificationsError('Failed to load notification history');
+          if (isMounted) {
+            setNotificationsError('Server connection failed');
+          }
         } finally {
-          setNotificationsLoading(false);
+          if (isMounted) {
+            setNotificationsLoading(false);
+          }
         }
       };
 
       fetchNotificationHistory();
+      
+      return () => {
+        isMounted = false;
+      };
     }, []);
 
     // --------------------------------------------------------

@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Reset body and html for full width */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
 /* Custom animations for success toast */
 @keyframes slideIn {
   0% {

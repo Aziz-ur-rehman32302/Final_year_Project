@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Plaza Management System - API Test</h1>
+    
+    <h2>Test Notification APIs</h2>
+    
+    <button onclick="testGetNotifications()">Test Get Notifications</button>
+    <button onclick="testMarkAsRead()">Test Mark as Read</button>
+    <button onclick="setupSession()">Setup Session</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost/plaza_management_system_backend';
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+        
+        async function setupSession() {
+            try {
+                log('Setting up session...', 'info');
+                const response = await fetch(`${API_BASE}/setup_session.php?tenant_id=T-001`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                log(`Session setup: ${JSON.stringify(data)}`, data.status === 'success' ? 'success' : 'error');
+            } catch (error) {
+                log(`Session setup error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testGetNotifications() {
+            try {
+                log('Testing get notifications...', 'info');
+                const response = await fetch(`${API_BASE}/get_notification_logs.php`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                log(`Response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log(`Response data: ${JSON.stringify(data, null, 2)}`, data.status === 'success' ? 'success' : 'error');
+                
+            } catch (error) {
+                log(`Get notifications error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testMarkAsRead() {
+            try {
+                log('Testing mark as read...', 'info');
+                const response = await fetch(`${API_BASE}/mark_notification_read.php`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        id: 'N-001',
+                        tenant_id: 'T-001'
+                    })
+                });
+                
+                log(`Response status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log(`Response data: ${JSON.stringify(data, null, 2)}`, data.status === 'success' ? 'success' : 'error');
+                
+            } catch (error) {
+                log(`Mark as read error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto setup session on page load
+        window.onload = function() {
+            log('Page loaded. Setting up session automatically...', 'info');
+            setupSession();
+        };
+    </script>
+</body>
+</html>

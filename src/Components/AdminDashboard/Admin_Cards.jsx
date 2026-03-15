@@ -35,6 +35,7 @@ const Admin_Cards = () => {
 
         const response = await fetch('http://localhost/plaza_management_system_backend/rent_summary.php', {
           method: 'GET',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },

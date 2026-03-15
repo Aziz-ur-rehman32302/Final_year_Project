@@ -33,7 +33,9 @@ const initialRentRecords: TenantRent[] = [];
        setIsLoadingRecords(true);
        setRecordsError('');
        
-       const response = await fetch('http://localhost/plaza_management_system_backend/rent_records.php');
+       const response = await fetch('http://localhost/plaza_management_system_backend/rent_records.php', {
+         credentials: 'include'
+       });
        
        if (!response.ok) {
          throw new Error('Failed to fetch rent records');
@@ -95,11 +97,8 @@ const initialRentRecords: TenantRent[] = [];
 
   const filterRentRecords=rentRecords.filter((dets)=>{
     
-    
-
     const term = searchvalue.toLowerCase().trim();
     const month = selectedMonth.toLowerCase().trim();
-    const status = selectedStatus.toLowerCase().trim();
 
     // 01 Search box filter
     const matchesSearch =
@@ -113,11 +112,10 @@ const initialRentRecords: TenantRent[] = [];
     month === '' || // agar month empty hai to ignore
     dets.rentMonth.toLowerCase() === month;
 
-    //03 status filter
-    const matchedStatus=
-    status === '' || 
-    // status === 'all status'||
-    dets.paymentStatus.toLowerCase() === status
+    //03 status filter - exact match without toLowerCase
+    const matchedStatus =
+    selectedStatus === '' ||
+    dets.paymentStatus === selectedStatus;
 
     // 04 Combined logic
      return matchesSearch && matchesMonth && matchedStatus;
@@ -195,7 +193,9 @@ const initialRentRecords: TenantRent[] = [];
         setIsLoading(true);
         setError('');
         
-        const response = await fetch('http://localhost/plaza_management_system_backend/rent_summary.php');
+        const response = await fetch('http://localhost/plaza_management_system_backend/rent_summary.php', {
+          credentials: 'include'
+        });
         
         if (!response.ok) {
           throw new Error('Failed to fetch data');
@@ -232,9 +232,9 @@ const initialRentRecords: TenantRent[] = [];
 
 
   return (
-    <div className='w-full  p-6  bg-gray-50' >
+    <div className='w-2/2 pl-4 bg-gray-50' >
        {/* Header */}
-        <div className=' w-full'>
+        <div className='w-full px-6 pt-6'>
 
             <div className="flex items-center gap-1 ">
                 <FileText className="w-6 h-6 text-blue-600" />
@@ -244,7 +244,7 @@ const initialRentRecords: TenantRent[] = [];
               
         </div>
         {/* Summary Cards */}
-        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2'>
+        <div className='w-[102%]  grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2 mb-5 pt-2 pl-6'>
             {isLoading ? (
               <div className="col-span-3 text-center py-8 text-gray-600">Loading...</div>
             ) : error ? (
@@ -271,7 +271,7 @@ const initialRentRecords: TenantRent[] = [];
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg border mt-4 border-gray-200 p-4">
+        <div className="bg-white w-2/2 rounded-lg border mt-4 border-gray-200 p-4 mx-6">
             <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
                     <div className="relative">
@@ -340,21 +340,21 @@ const initialRentRecords: TenantRent[] = [];
         </div>
 
         {/* Data Table */}
-                <div className="bg-white rounded-lg border mt-6 border-gray-200 overflow-hidden">
+                <div className="bg-white w-full rounded-lg border mt-6 border-gray-200 overflow-hidden  mx-6">
                   <div id='custom-scrollbar' className="overflow-x-auto">
 
-                    <table className="w-full min-w-[1000px]">
+                    <table className="w-full ">
                       <thead className="bg-gray-50 border-b border-gray-200">
                     
                         <tr>
-                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Tenant ID</th>
-                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Tenant Name</th>
-                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Shop</th>
-                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Rent Month</th>
-                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Due Amount</th>
-                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Due Date</th>
-                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Status</th>
-                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider">Paid Date</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider whitespace-nowrap">Tenant ID</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider whitespace-nowrap">Tenant Name</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider whitespace-nowrap">Shop</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider whitespace-nowrap">Rent Month</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider whitespace-nowrap">Due Amount</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider whitespace-nowrap">Due Date</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider whitespace-nowrap">Status</th>
+                          <th className="px-3 py-2 text-left text-sm font-bold text-gray-800 uppercase tracking-wider whitespace-nowrap">Paid Date</th>
                         </tr>
                       </thead>
                        <tbody className='divide-y divide-gray-200'>
@@ -374,22 +374,22 @@ const initialRentRecords: TenantRent[] = [];
                             currentRecords.map((record, index) => (
                               
                               <tr key={record.id} className='hover:bg-gray-50 transition-colors'>
-                                <td className='px-3 py-2 text-base text-gray-900'>{record.tenantId}</td>
+                                <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>{record.tenantId}</td>
                                
-                                <td className='px-3 py-2 text-base text-gray-900'>{record.tenantName}</td>
-                                <td className='px-3 py-2 text-base text-gray-900'>{record.shopNumber}</td>
-                                <td className='px-3 py-2 text-base text-gray-900'>{record.rentMonth}</td>
-                                <td className='px-3 py-2 text-base text-gray-900'>${record.dueAmount.toLocaleString()}</td>
-                                <td className='px-3 py-2 text-base text-gray-900'>{record.dueDate}</td>
+                                <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>{record.tenantName}</td>
+                                <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>{record.shopNumber}</td>
+                                <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>{record.rentMonth}</td>
+                                <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>${record.dueAmount.toLocaleString()}</td>
+                                <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>{record.dueDate}</td>
                                
-                                <td className='px-3 py-2'>
+                                <td className='px-3 py-2 whitespace-nowrap'>
                                   <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${assignStatusColor(record.paymentStatus).color} ${assignStatusColor(record.paymentStatus).bg}`}>
                                     {assignStatusColor(record.paymentStatus).icon}
                                     {record.paymentStatus}
                                   </span>
                                 </td>
 
-                                <td className='px-3 py-2 text-base text-gray-900'>{record.paidDate || '-'}</td>
+                                <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>{record.paidDate || '-'}</td>
                               </tr>
                                 ))
                                 ) : (
@@ -408,16 +408,16 @@ const initialRentRecords: TenantRent[] = [];
                   
                   {/* Pagination */}
                   {!isLoadingRecords && !recordsError && totalRecords > 0 && (
-                    <div className="px-8 py-6 border-t border-gray-200 bg-gray-50">
-                      <div className="flex items-center justify-between">
+                    <div className="px-4 sm:px-8 py-6 border-t border-gray-200 bg-gray-50">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         {/* Records info */}
-                        <div className="text-base font-medium text-gray-700">
+                        <div className="text-base font-medium text-gray-700 text-center sm:text-left">
                           Showing <span className="font-bold text-blue-600">{startIndex + 1}</span> to <span className="font-bold text-blue-600">{Math.min(endIndex, totalRecords)}</span> of <span className="font-bold text-blue-600">{totalRecords}</span> results
                           <span className="text-sm text-gray-500 ml-2">(Page {currentPage} of {totalPages})</span>
                         </div>
                         
                         {/* Pagination controls */}
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 flex-wrap justify-center">
                           {/* Previous button */}
                           <button
                             onClick={() => handlePageChange(currentPage - 1)}
@@ -467,7 +467,7 @@ const initialRentRecords: TenantRent[] = [];
                   )}
                 </div>
 
-      
+      <div className="pb-6"></div>
     </div>
   )
 }
