@@ -1,30 +1,41 @@
-import { Bell,  } from 'lucide-react'
+import { Bell } from 'lucide-react'
 
-const TenantSideBar = ({sidebarOpen ,triggerTenantNotification,triggerTenantDastBoard }) => {
-  
+const TenantSideBar = ({ sidebarOpen, activeSection, triggerTenantNotification, triggerTenantDastBoard }) => {
   return (
-      <aside 
-      className={`bg-white p-6  lg:block  ${
-          !sidebarOpen ? 'block' : 'hidden '
-        }`}
-      >
-        <div className='flex gap-2  text-blue-600 bg-blue-50 cursor-pointer hover:bg-blue-100  hover:scale-[1.02] transition-all duration-450  active:scale-95 p-3 rounded-xl'>
-          
+    <aside
+      className={`bg-white p-4 lg:p-6 h-full ${
+        sidebarOpen ? 'block' : 'hidden lg:block'
+      }`}
+    >
+      <nav className="space-y-3">
+        <button
+          type="button"
+          onClick={triggerTenantDastBoard}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-sm md:text-base transition-all duration-200 ${
+            activeSection === 'dashboard'
+              ? 'bg-blue-100 text-blue-700 font-semibold'
+              : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+          }`}
+        >
+          <span className="text-base md:text-lg">Dashboard</span>
+        </button>
 
-          <span onClick={()=>{triggerTenantDastBoard() }} className='text-lg '>DashBoard</span>
-
-        </div>
-        <div className='flex gap-2 mt-3  bg-blue-50 cursor-pointer hover:bg-blue-100  hover:scale-[1.02] transition-all duration-450  active:scale-95 p-3 rounded-xl'>
-          <div className='mt-0.5'>
-          <Bell/>
-
-          </div>
-          <span onClick={()=>{triggerTenantNotification()
-          }}
-          className='text-lg '>Notification</span>
-        </div>
-      </aside>
-    // </div>
+        <button
+          type="button"
+          onClick={triggerTenantNotification}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-sm md:text-base transition-all duration-200 ${
+            activeSection === 'notifications'
+              ? 'bg-blue-100 text-blue-700 font-semibold'
+              : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+          }`}
+        >
+          <span className="mt-0.5">
+            <Bell className="w-4 h-4 md:w-5 md:h-5" />
+          </span>
+          <span>Notifications</span>
+        </button>
+      </nav>
+    </aside>
   )
 }
 

@@ -232,7 +232,7 @@ const initialRentRecords: TenantRent[] = [];
 
 
   return (
-    <div className='w-2/2 pl-4 bg-gray-50' >
+    <div className='w-[95%] pl-4 bg-gray-50' >
        {/* Header */}
         <div className='w-full px-6 pt-6'>
 

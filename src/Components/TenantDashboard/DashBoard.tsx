@@ -6,18 +6,13 @@ import {
   FileText,
   MessageSquare,
   Loader2,
-  Bell,
-  Clock,
-  Eye,
-  Mail,
-  Smartphone,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getToken } from "../../utils/auth";
 import TenantIssues from "./TenantIssues";
 
 const DashBoard = () => {
-  // API Data State
+  // API Data State 
   const [tenantData, setTenantData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,10 +22,8 @@ const DashBoard = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState('');
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
   
   // Legacy states for compatibility
-  const [payPayment, setPayPayment] = useState(false);
   const [payPaymentSuccessFully, setPayPaymentSuccessFully] = useState(false);
   
   // Fetch tenant data on component mount
@@ -100,8 +93,6 @@ const DashBoard = () => {
           console.log('Payment Summary:', paymentSummary);
           console.log('Processed Tenant Data:', currentTenantData);
           setTenantData(currentTenantData);
-          // Set payment status based on API data
-          setPayPayment(tenantInfo.current_status === 'paid');
         } else {
           console.log('API Error Response:', result);
           setError(result.message || 'Failed to fetch tenant data');
@@ -230,76 +221,6 @@ const DashBoard = () => {
     fetchRentHistory();
   }, []);
   
-  // Fetch notifications for logged-in tenant
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        setNotificationsLoading(true);
-        setNotificationsError('');
-        
-        const token = getToken();
-        if (!token) {
-          setNotificationsError('No authentication token found');
-          setNotificationsLoading(false);
-          return;
-        }
-
-        const response = await fetch('http://localhost/plaza_management_system_backend/get_notifications.php', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: Failed to fetch notifications`);
-        }
-
-        const responseText = await response.text();
-        
-        if (!responseText) {
-          throw new Error('Empty response from server');
-        }
-
-        let result;
-        try {
-          result = JSON.parse(responseText);
-        } catch (parseError) {
-          throw new Error('Invalid response format');
-        }
-
-        if (result.status === 'success' || result.tenant_id) {
-          // Handle both response formats
-          const tenantIdFromResponse = result.tenant_id;
-          const notificationData = result.notifications || [];
-          const counts = result.counts || {
-            total: notificationData.length,
-            unread: notificationData.filter(n => n.status === 'unread').length,
-            read: notificationData.filter(n => n.status === 'read').length
-          };
-          
-          setTenantId(tenantIdFromResponse);
-          setNotifications(notificationData);
-          setNotificationCounts(counts);
-          
-          console.log('Notifications loaded for tenant:', tenantIdFromResponse);
-          console.log('Notifications:', notificationData);
-          console.log('Counts:', counts);
-        } else {
-          setNotificationsError(result.message || 'Failed to fetch notifications');
-        }
-      } catch (err) {
-        console.error('Notifications fetch error:', err);
-        setNotificationsError('Failed to load notifications. Please try again.');
-      } finally {
-        setNotificationsLoading(false);
-      }
-    };
-
-    fetchNotifications();
-  }, []);
-  
   // Payment processing function
   const processPayment = async () => {
     if (!selectedPaymentMethod) {
@@ -390,29 +311,29 @@ const DashBoard = () => {
           setPayPaymentSuccessFully(false);
         }, 5000);
         
-        console.log('✅ Payment successful via', selectedPaymentMethod);
+        console.log('Payment successful via', selectedPaymentMethod);
       } else {
         // Handle API error response
         const errorMessage = result.message || result.error || 'Payment processing failed. Please try again.';
         setPaymentError(errorMessage);
-        console.error('❌ Payment failed:', errorMessage);
+        console.error('Payment failed:', errorMessage);
       }
     } catch (err) {
-      console.error('💥 Payment processing error:', err);
+      console.error('Payment processing error:', err);
       
       // Handle different types of errors with user-friendly messages
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        setPaymentError('❌ Network Error: Unable to connect to payment server. Please check your internet connection.');
+        setPaymentError('Network Error: Unable to connect to payment server. Please check your internet connection.');
       } else if (err.message.includes('HTTP 404')) {
-        setPaymentError('❌ API Error: Payment endpoint not found. Please contact support.');
+        setPaymentError('API Error: Payment endpoint not found. Please contact support.');
       } else if (err.message.includes('HTTP 500')) {
-        setPaymentError('❌ Server Error: Payment service is temporarily unavailable. Please try again later.');
+        setPaymentError('Server Error: Payment service is temporarily unavailable. Please try again later.');
       } else if (err.message.includes('Empty response')) {
-        setPaymentError('❌ Server Error: No response from payment service. Please verify the API is running.');
+        setPaymentError('Server Error: No response from payment service. Please verify the API is running.');
       } else if (err.message.includes('invalid JSON')) {
-        setPaymentError('❌ Server Error: Invalid response format. Please contact technical support.');
+        setPaymentError('Server Error: Invalid response format. Please contact technical support.');
       } else {
-        setPaymentError('❌ Unexpected Error: Something went wrong. Please try again or contact support.');
+        setPaymentError('Unexpected Error: Something went wrong. Please try again or contact support.');
       }
     } finally {
       setIsProcessingPayment(false);
@@ -442,73 +363,6 @@ const DashBoard = () => {
       console.log('Payment status updated:', result);
     } catch (err) {
       console.error('Failed to update payment status:', err);
-    }
-  };
-  
-  // Mark notification as read
-  const markNotificationAsRead = async (notificationId) => {
-    try {
-      setMarkingAsRead(notificationId.toString());
-      
-      const token = getToken();
-      if (!token) {
-        console.error('No authentication token found');
-        return;
-      }
-
-      const response = await fetch('http://localhost/plaza_management_system_backend/mark_notification_read.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          notification_id: notificationId
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to mark notification as read`);
-      }
-
-      const responseText = await response.text();
-      
-      if (!responseText) {
-        throw new Error('Empty response from server');
-      }
-
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        throw new Error('Invalid response format');
-      }
-
-      if (result.status === 'success') {
-        // Update local state optimistically
-        setNotifications(prev => 
-          prev.map(notification => 
-            notification.notification_id === notificationId 
-              ? { ...notification, status: 'read' }
-              : notification
-          )
-        );
-        
-        // Update counts dynamically
-        setNotificationCounts(prev => ({
-          ...prev,
-          unread: Math.max(0, prev.unread - 1),
-          read: prev.read + 1
-        }));
-        
-        console.log('Notification marked as read:', notificationId);
-      } else {
-        console.error('Failed to mark notification as read:', result.message);
-      }
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
-    } finally {
-      setMarkingAsRead('');
     }
   };
   
@@ -589,29 +443,29 @@ const DashBoard = () => {
           setIssueSuccess(false);
         }, 5000);
         
-        console.log('✅ Issue reported successfully');
+        console.log('Issue reported successfully');
       } else {
         // Handle API error response
         const errorMessage = result.message || result.error || 'Failed to submit issue. Please try again.';
         setIssueError(errorMessage);
-        console.error('❌ Issue submission failed:', errorMessage);
+        console.error('Issue submission failed:', errorMessage);
       }
     } catch (err) {
-      console.error('💥 Issue submission error:', err);
+      console.error('Issue submission error:', err);
       
       // Handle different types of errors
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        setIssueError('❌ Network Error: Unable to connect to server. Please check your internet connection.');
+        setIssueError('Network Error: Unable to connect to server. Please check your internet connection.');
       } else if (err.message.includes('HTTP 404')) {
-        setIssueError('❌ Service Error: Issue reporting service not found. Please contact support.');
+        setIssueError('Service Error: Issue reporting service not found. Please contact support.');
       } else if (err.message.includes('HTTP 500')) {
-        setIssueError('❌ Server Error: Issue reporting service is temporarily unavailable. Please try again later.');
+        setIssueError('Server Error: Issue reporting service is temporarily unavailable. Please try again later.');
       } else if (err.message.includes('Empty response')) {
-        setIssueError('❌ Server Error: No response from issue reporting service.');
+        setIssueError('Server Error: No response from issue reporting service.');
       } else if (err.message.includes('Invalid response')) {
-        setIssueError('❌ Server Error: Invalid response format. Please contact technical support.');
+        setIssueError('Server Error: Invalid response format. Please contact technical support.');
       } else {
-        setIssueError('❌ Unexpected Error: Something went wrong. Please try again or contact support.');
+        setIssueError('Unexpected Error: Something went wrong. Please try again or contact support.');
       }
     } finally {
       setIsSubmittingIssue(false);
@@ -635,80 +489,6 @@ const DashBoard = () => {
     handlePayNowClick();
   };
   
-  // Get notification type icon
-  const getNotificationIcon = (type) => {
-    switch (type?.toLowerCase()) {
-      case 'reminder':
-        return <Clock className="w-5 h-5 text-blue-600" />;
-      case 'payment':
-        return <DollarSign className="w-5 h-5 text-green-600" />;
-      case 'overdue':
-        return <AlertCircle className="w-5 h-5 text-red-600" />;
-      case 'announcement':
-        return <Bell className="w-5 h-5 text-purple-600" />;
-      case 'new':
-        return <Bell className="w-5 h-5 text-blue-600" />;
-      default:
-        return <Bell className="w-5 h-5 text-gray-600" />;
-    }
-  };
-  
-  // Get notification type badge styling
-  const getNotificationBadge = (type) => {
-    const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize";
-    
-    switch (type?.toLowerCase()) {
-      case 'reminder':
-        return `${baseClasses} bg-blue-100 text-blue-800`;
-      case 'payment':
-        return `${baseClasses} bg-green-100 text-green-800`;
-      case 'overdue':
-        return `${baseClasses} bg-red-100 text-red-800`;
-      case 'announcement':
-        return `${baseClasses} bg-purple-100 text-purple-800`;
-      case 'new':
-        return `${baseClasses} bg-blue-100 text-blue-800`;
-      default:
-        return `${baseClasses} bg-gray-100 text-gray-800`;
-    }
-  };
-  
-  // Get delivery method icon
-  const getDeliveryIcon = (method) => {
-    switch (method?.toLowerCase()) {
-      case 'email':
-        return <Mail className="w-4 h-4 text-gray-600" />;
-      case 'sms':
-        return <Smartphone className="w-4 h-4 text-gray-600" />;
-      default:
-        return <Bell className="w-4 h-4 text-gray-600" />;
-    }
-  };
-  
-  // Format timestamp for notifications
-  const formatNotificationTime = (timestamp) => {
-    try {
-      const date = new Date(timestamp);
-      const now = new Date();
-      const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-      if (diffInHours < 1) {
-        return 'Just now';
-      } else if (diffInHours < 24) {
-        return `${Math.floor(diffInHours)} hours ago`;
-      } else if (diffInHours < 48) {
-        return 'Yesterday';
-      } else {
-        return date.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-        });
-      }
-    } catch {
-      return timestamp;
-    }
-  };
   //  --------------------------------------------------------
   // Issue reporting states
   const [issueDescription, setIssueDescription] = useState("");
@@ -729,17 +509,9 @@ const DashBoard = () => {
   const [loadingRentHistory, setLoadingRentHistory] = useState(true);
   const [rentHistoryError, setRentHistoryError] = useState('');
   
-  // Notification states
-  const [notifications, setNotifications] = useState([]);
-  const [notificationsLoading, setNotificationsLoading] = useState(true);
-  const [notificationsError, setNotificationsError] = useState('');
-  const [tenantId, setTenantId] = useState('');
-  const [notificationCounts, setNotificationCounts] = useState({
-    total: 0,
-    unread: 0,
-    read: 0
-  });
-  const [markingAsRead, setMarkingAsRead] = useState('');
+  // Notification states were moved to TenantNotificationsPanel view
+  const isPaid = tenantData?.payment_status === 'Paid';
+
   return (
     <div className="p-5 w-full">
       {/* Header */}
@@ -792,33 +564,9 @@ const DashBoard = () => {
         {/* ----------------------------------------------- */}
           {/* Enhanced Success Toast with Engaging Animation */}
         {payPaymentSuccessFully && (
-          <div className="fixed top-4 right-4 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 transform transition-all duration-700 ease-out animate-slide-in">
-            <div className="flex-shrink-0">
-              <div className="relative">
-                <CheckCircle className="w-8 h-8 animate-pulse" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
-              </div>
-            </div>
-            <div className="flex-grow">
-              <p className="font-bold text-lg flex items-center gap-2">
-                Payment Successful! 
-                <span className="text-xl animate-bounce">🎉</span>
-              </p>
-              <p className="text-sm opacity-90 font-medium">
-                ✅ Paid via {selectedPaymentMethod || 'selected method'}
-              </p>
-              <p className="text-xs opacity-75 mt-1">
-                Your payment status has been updated
-              </p>
-            </div>
-            <div className="flex-shrink-0">
-              <button 
-                onClick={() => setPayPaymentSuccessFully(false)}
-                className="text-white hover:text-gray-200 transition-colors p-1 hover:bg-white hover:bg-opacity-20 rounded-full"
-              >
-                ✕
-              </button>
-            </div>
+          <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-all duration-300 animate-bounce">
+            <CheckCircle className="w-5 h-5" />
+            <span>Payment processed successfully!</span>
           </div>
         )}
         {/* ---------------------------------------------- */}
@@ -826,8 +574,8 @@ const DashBoard = () => {
         <div className="relative">
           <div className="grid md:grid-cols-3 w-full grid-cols-1 gap-8 mt-3">
             <div className="p-5 border border-gray-400 rounded-xl bg-blue-400 hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 ease-in-out animate-card-appear">
-              <p className="text-lg text-white">Shop Number</p>
-              <h1 className="font-semibold text-2xl text-white">{tenantData.shop_number || 'N/A'}</h1>
+              <p className="text-lg">Shop Number</p>
+              <h1 className="font-semibold text-2xl">{tenantData.shop_number || 'N/A'}</h1>
             </div>
 
             <div className="p-5 border border-gray-400 rounded-xl hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 ease-in-out animate-card-appear" style={{animationDelay: '0.1s'}}>
@@ -836,7 +584,7 @@ const DashBoard = () => {
             </div>
 
             <div className="p-5 border border-gray-400 rounded-xl hover:shadow-xl hover:-translate-y-1 cursor-pointer transition-all duration-300 ease-in-out animate-card-appear" style={{animationDelay: '0.2s'}}>
-              {tenantData.payment_status === 'Paid' ? (
+              {isPaid ? (
                 <div>
                   <p className="text-lg">Payment Status</p>
                   <h1 className="font-semibold gap-1 text-green-400 flex text-xl">
@@ -857,31 +605,29 @@ const DashBoard = () => {
             {/* card section end  */}
           </div>
           {/* Dynamic Payment Status Message */}
-          {tenantData.payment_status === 'Paid' ? (
-            <div className="bg-gradient-to-r from-green-50 to-green-100 grid grid-cols-1 mt-4 gap-2 border border-green-300 rounded-lg p-4 shadow-sm">
-              <div className="flex gap-2">
-                <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-lg font-semibold text-green-800">Payment Confirmed ✅</p>
-                  <p className="text-sm text-green-700 mt-1">
-                    Your rent payment of <span className="font-semibold">${tenantData.rent_amount}</span> has been received. 
-                    Thank you for your prompt payment!
-                  </p>
-                </div>
+          {isPaid ? (
+            <div className="bg-green-50 grid grid-cols-1 mt-4 gap-2 border border-green-200 rounded p-3">
+              <div className="flex gap-1.5">
+                <h1>
+                  <CheckCircle className="w-5 h-5 mt-1 text-green-500" />
+                </h1>
+                <p className="text-lg text-gray-600">Payment Confirmed</p>
               </div>
+              <p className="text-sm">
+                Your rent payment of ${tenantData.rent_amount || 'N/A'} has been received. Thank you for your prompt payment!
+              </p>
             </div>
           ) : (
-            <div className="bg-gradient-to-r from-red-50 to-orange-50 grid grid-cols-1 mt-4 gap-2 border border-red-300 rounded-lg p-4 shadow-sm">
-              <div className="flex gap-2">
-                <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-lg font-semibold text-red-800">Payment Due ⚠️</p>
-                  <p className="text-sm text-red-700 mt-1">
-                    Your rent of <span className="font-semibold">${tenantData.rent_amount}</span> is currently due. 
-                    Please make payment to avoid late fees.
-                  </p>
-                </div>
+            <div className="bg-red-50 grid grid-cols-1 mt-4 gap-2 border border-red-200 rounded p-3">
+              <div className="flex gap-1.5">
+                <h1>
+                  <AlertCircle className="w-5 h-5 mt-1 text-red-500" />
+                </h1>
+                <p className="text-lg text-gray-600">Payment Due</p>
               </div>
+              <p className="text-sm">
+                Your rent of ${tenantData.rent_amount || 'N/A'} is currently due{tenantData.payment_summary?.due_date ? ` on ${tenantData.payment_summary.due_date}` : ''}. Please make payment to avoid late fees.
+              </p>
             </div>
           )}
 
@@ -895,7 +641,7 @@ const DashBoard = () => {
                     onClick={closePaymentModal}
                     className="text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    ✕
+                    x
                   </button>
                 </div>
                 
@@ -979,11 +725,11 @@ const DashBoard = () => {
           )}
           
           {/* Pay Now Button - Only show if payment is not made */}
-          {tenantData.payment_status !== 'Paid' && (
+          {!isPaid && (
             <div className="flex justify-center items-center w-full">
               <button
                 onClick={handlePayNowClick}
-                className="text-lg font-semibold py-3 px-8 mt-3 bg-blue-500 text-white cursor-pointer hover:bg-blue-600 hover:shadow-xl ease-in-out transition-all duration-300 active:scale-95 rounded-lg"
+                className="text-lg font-semibold py-2 px-8 mt-3 bg-blue-500 text-white cursor-pointer hover:bg-blue-600 hover:shadow-xl ease-in-out transition-all duration-300 active:scale-95 rounded-lg"
               >
                 Pay Now
               </button>
@@ -995,30 +741,9 @@ const DashBoard = () => {
 
       {/* Issue Success Toast */}
       {issueSuccess && (
-        <div className="fixed top-4 right-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 transform transition-all duration-700 ease-out animate-slide-in">
-          <div className="flex-shrink-0">
-            <div className="relative">
-              <CheckCircle className="w-8 h-8 animate-pulse" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
-            </div>
-          </div>
-          <div className="flex-grow">
-            <p className="font-bold text-lg flex items-center gap-2">
-              Issue Reported! 
-              <span className="text-xl animate-bounce">📧</span>
-            </p>
-            <p className="text-sm opacity-90 font-medium">
-              Your issue has been sent to the admin. Please wait for a response.
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            <button 
-              onClick={() => setIssueSuccess(false)}
-              className="text-white hover:text-gray-200 transition-colors p-1 hover:bg-white hover:bg-opacity-20 rounded-full"
-            >
-              ✕
-            </button>
-          </div>
+        <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-all duration-300 animate-bounce">
+          <CheckCircle className="w-5 h-5" />
+          <span>Issue reported successfully! Admin will be notified.</span>
         </div>
       )}
 
@@ -1061,7 +786,7 @@ const DashBoard = () => {
                   onClick={() => setIssueError('')}
                   className="ml-auto text-red-500 hover:text-red-700"
                 >
-                  ✕
+                  x
                 </button>
               </div>
             )}
@@ -1107,141 +832,6 @@ const DashBoard = () => {
         </h1>
         
         <TenantIssues refreshTrigger={issuesRefreshTrigger} />
-      </div>
-      
-      {/* My Notifications Panel */}
-      <div className="border border-gray-200 p-4 mt-6 rounded-lg bg-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="flex gap-3 text-lg font-semibold">
-            <Bell className="w-5 h-5 mt-0.5" />
-            My Notifications
-          </h1>
-          {/* New Notifications Count */}
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600">Tenant ID: <span className="font-medium">{tenantId || 'Loading...'}</span></span>
-            {notificationCounts.unread > 0 && (
-              <div className="flex items-center gap-1 bg-red-100 text-red-800 px-2 py-1 rounded-full">
-                <Bell className="w-3 h-3" />
-                <span className="font-medium">{notificationCounts.unread} New</span>
-              </div>
-            )}
-            <div className="text-xs text-gray-500">
-              Total: {notificationCounts.total} | Read: {notificationCounts.read}
-            </div>
-          </div>
-        </div>
-        
-        {/* Loading Notifications */}
-        {notificationsLoading && (
-          <div className="flex items-center justify-center py-8">
-            <div className="flex items-center gap-3 text-blue-600">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Loading notifications...</span>
-            </div>
-          </div>
-        )}
-        
-        {/* Notifications Error */}
-        {notificationsError && !notificationsLoading && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            <span>{notificationsError}</span>
-            <button 
-              onClick={() => window.location.reload()}
-              className="ml-auto bg-red-100 hover:bg-red-200 px-3 py-1 rounded text-sm transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-        
-        {/* Notifications List */}
-        {!notificationsLoading && !notificationsError && (
-          <div className="space-y-3">
-            {notifications.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="text-lg font-medium">No notifications available.</p>
-                <p className="text-sm">You're all caught up!</p>
-              </div>
-            ) : (
-              notifications.map((notification) => (
-                <div
-                  key={notification.notification_id}
-                  className={`border rounded-lg p-4 transition-all duration-200 ${
-                    notification.status === 'unread' 
-                      ? 'border-blue-200 bg-blue-50 shadow-sm' 
-                      : 'border-gray-200 bg-white'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Type icon */}
-                    <div className="flex-shrink-0 mt-1">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className={`font-medium truncate ${
-                          notification.status === 'unread' ? 'text-gray-900' : 'text-gray-600'
-                        }`}>
-                          {notification.message?.substring(0, 50)}{notification.message?.length > 50 ? '...' : ''}
-                        </h3>
-                        <span className={getNotificationBadge(notification.type)}>
-                          {notification.type}
-                        </span>
-                        {notification.status === 'unread' && (
-                          <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
-                        )}
-                      </div>
-                      
-                      <p className={`text-sm mb-3 leading-relaxed ${
-                        notification.status === 'unread' ? 'text-gray-800' : 'text-gray-500'
-                      }`}>
-                        {notification.message}
-                      </p>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span>{formatNotificationTime(notification.timestamp)}</span>
-                        </div>
-                        
-                        {/* Mark as read button */}
-                        {notification.status === 'unread' && (
-                          <button
-                            onClick={() => markNotificationAsRead(notification.notification_id)}
-                            disabled={markingAsRead === notification.notification_id.toString()}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {markingAsRead === notification.notification_id.toString() ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                Marking...
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="w-3 h-3" />
-                                Click to mark as read
-                              </>
-                            )}
-                          </button>
-                        )}
-                        
-                        {notification.status === 'read' && (
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 bg-gray-100 rounded-md">
-                            <CheckCircle className="w-3 h-3" />
-                            Read
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
       </div>
       {/* ============================================================ */}
       {/* Financial Summary Cards */}
@@ -1302,7 +892,11 @@ const DashBoard = () => {
                 <CheckCircle className="text-green-700" />
               </div>
               <div className="mt-1">
-                <h1 className="text-lg font-semibold">{financialData.payments_made}</h1>
+                <h1 className="text-lg font-semibold">
+                  {typeof financialData.payments_made === 'number'
+                    ? financialData.payments_made
+                    : (tenantData?.payment_history?.length || 0)}
+                </h1>
                 <p>Payments Made</p>
               </div>
             </div>
@@ -1313,7 +907,19 @@ const DashBoard = () => {
                 <DollarSign className="text-blue-700" />
               </div>
               <div className="mt-1">
-                <h1 className="text-lg font-semibold">${financialData.total_paid?.toLocaleString() || '0'}</h1>
+                <h1 className="text-lg font-semibold">
+                  ${(() => {
+                    if (typeof financialData.total_paid === 'number') {
+                      return financialData.total_paid.toLocaleString();
+                    }
+                    const history = tenantData?.payment_history || [];
+                    const totalFromHistory = history.reduce((sum, record) => {
+                      const amount = Number(record.amount || record.paid_amount || 0);
+                      return sum + (isNaN(amount) ? 0 : amount);
+                    }, 0);
+                    return totalFromHistory.toLocaleString();
+                  })() || '0'}
+                </h1>
                 <p>Total Paid</p>
               </div>
             </div>
@@ -1406,14 +1012,18 @@ const DashBoard = () => {
                       </td>
                       <td className="py-3 px-4">
                         {record.status === 'Paid' ? (
-                          <div className="flex items-center gap-1 text-green-600 bg-green-100 rounded-full px-3 py-1 w-fit">
-                            <CheckCircle className="w-4 h-4" />
-                            <span className="text-sm font-medium">Paid</span>
+                          <div className="flex gap-1 text-green-600 bg-green-200 rounded-2xl h-6 w-16 justify-center text-sm mt-2 ml-2 items-center">
+                            <span>
+                              <CheckCircle className="w-3 h-3 mt-0.5" />
+                            </span>
+                            Paid
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1 text-red-600 bg-red-100 rounded-full px-3 py-1 w-fit">
-                            <AlertCircle className="w-4 h-4" />
-                            <span className="text-sm font-medium">{record.status || 'Unpaid'}</span>
+                          <div className="flex gap-1 text-red-600 bg-red-200 rounded-2xl h-6 w-20 justify-center text-sm mt-2 ml-2 items-center">
+                            <span>
+                              <AlertCircle className="w-3 h-3 mt-0.5" />
+                            </span>
+                            {record.status || 'Unpaid'}
                           </div>
                         )}
                       </td>

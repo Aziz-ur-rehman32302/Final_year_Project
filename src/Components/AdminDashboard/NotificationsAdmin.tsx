@@ -285,7 +285,7 @@ const NotificationsAdmin = () => {
 
 
   return (
-    <div className="p-6 bg-gray-100 h-full">
+    <div className="p-6 bg-gray-100 w-3/3.5 border h-full">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-2">

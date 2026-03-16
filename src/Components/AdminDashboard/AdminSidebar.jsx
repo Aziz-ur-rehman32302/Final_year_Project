@@ -55,7 +55,7 @@ const AdminSidebar = ({isVisible,toggledashboardButton}) => {
     
     return (
         
-        <div className='flex w-[89%]'>
+        <div className='flex w-[100%]'>
           
             
           <div className={`${isVisible ? 'block' : 'hidden'} border-r min-h-screen lg:block w-1/4 sm:w-1/3 lg:w-[200px] xl:w-[250px] flex-shrink-0`}> 
@@ -112,7 +112,7 @@ const AdminSidebar = ({isVisible,toggledashboardButton}) => {
             </div>
           )} 
            
-           {showRentRecord && <div className={`flex-1 w-full ${isVisible ? 'hidden' : 'block'}`}>
+           {showRentRecord && <div className={`flex-1 w-1/2 ${isVisible ? 'hidden' : 'block'}`}>
               <RentRecord/>
            </div> }
 
