@@ -99,7 +99,7 @@ const NotificationsAdmin = () => {
     
     const fetchNotificationSettings = async () => {
       try {
-        const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_settings.php', {
+        const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_rules.php', {
           method: 'GET',
           credentials: 'include'
         });
@@ -117,11 +117,11 @@ const NotificationsAdmin = () => {
         const data = JSON.parse(text);
         
         if (data.status === 'success' && isMounted) {
-          setReminderDays(data.reminderDays || '3');
-          setOverdueDays(data.overdueDays || '1');
-          setEnableEmail(data.enableEmail !== undefined ? data.enableEmail : true);
-          setEnableSMS(data.enableSMS !== undefined ? data.enableSMS : true);
-          setEnablePush(data.enablePush !== undefined ? data.enablePush : false);
+          setReminderDays(data.data.rent_reminder_days || '3');
+          setOverdueDays(data.data.overdue_alert_days || '1');
+          setEnableEmail(data.data.channel_email !== undefined ? Boolean(data.data.channel_email) : true);
+          setEnableSMS(data.data.channel_sms !== undefined ? Boolean(data.data.channel_sms) : true);
+          setEnablePush(data.data.channel_push !== undefined ? Boolean(data.data.channel_push) : false);
         }
       } catch (err) {
         console.error('Error fetching notification settings:', err);
@@ -145,14 +145,14 @@ const NotificationsAdmin = () => {
       setSettingsError('');
       
       const requestBody = {
-        reminderDays: reminderDays,
-        overdueDays: overdueDays,
-        enableEmail: enableEmail,
-        enableSMS: enableSMS,
-        enablePush: enablePush
+        rent_reminder_days: reminderDays,
+        overdue_alert_days: overdueDays,
+        channel_email: enableEmail ? 1 : 0,
+        channel_sms: enableSMS ? 1 : 0,
+        channel_push: enablePush ? 1 : 0
       };
       
-      const response = await fetch('http://localhost/plaza_management_system_backend/save_notification_settings.php', {
+      const response = await fetch('http://localhost/plaza_management_system_backend/save_notification_rules.php', {
         method: 'POST',
         credentials: 'include',
         headers: {

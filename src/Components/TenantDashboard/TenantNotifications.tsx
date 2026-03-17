@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { getUser } from '../../utils/auth';
 
 interface Notification {
   id: string;
@@ -15,7 +16,8 @@ interface TenantNotificationsResponse {
   status: 'success' | 'error';
   tenant_id: string;
   tenant_name?: string;
-  notifications: Notification[];
+  notifications?: Notification[];
+  logs?: Notification[];
   message?: string;
 }
 
@@ -34,8 +36,11 @@ const TenantNotifications: React.FC = () => {
         setLoading(true);
         setError('');
 
+        const currentUser = getUser();
+        const loggedInTenantId = currentUser?.id?.toString() || currentUser?.user_id?.toString() || currentUser?.tenant_id?.toString() || currentUser?.shop_number?.toString() || 'T-001';
+
         // Fetch notifications for the logged-in tenant
-        const response = await fetch('http://localhost/plaza_management_system_backend/get_tenant_notifications.php', {
+        const response = await fetch(`http://localhost/plaza_management_system_backend/get_tenant_notifications.php?tenant_id=${loggedInTenantId}`, {
           method: 'GET',
           credentials: 'include', // Include session cookies for authentication
           headers: {
@@ -58,7 +63,9 @@ const TenantNotifications: React.FC = () => {
         if (data.status === 'success' && isMounted) {
           setTenantId(data.tenant_id);
           setTenantName(data.tenant_name || '');
-          setNotifications(data.notifications || []);
+          
+          const mappedNotifications = data.notifications || data.logs || [];
+          setNotifications(mappedNotifications);
         } else {
           throw new Error(data.message || 'Failed to load notifications');
         }

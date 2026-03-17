@@ -28,9 +28,10 @@ interface TenantNotificationsResponse {
   status: 'success' | 'error';
   tenant_id: string;
   tenant_name?: string;
-  notifications: Notification[];
-  unread_count: number;
-  total_count: number;
+  notifications?: Notification[];
+  logs?: Notification[];
+  unread_count?: number;
+  total_count?: number;
   message?: string;
 }
 
@@ -82,7 +83,7 @@ const TenantNotificationsPanel: React.FC = () => {
           })
         }).catch(() => {
           // Suppress network errors in console
-          return { ok: false, status: 500 };
+          return new Response(null, { status: 500, statusText: "Network Error" });
         });
 
         // Handle different response scenarios
@@ -118,13 +119,17 @@ const TenantNotificationsPanel: React.FC = () => {
         console.log('API Response:', data);
 
         if (data.status === 'success' && isMounted) {
+          setError(''); // Clear any previous errors
           setTenantId(data.tenant_id);
           setTenantName(data.tenant_name || '');
-          setNotifications(data.notifications || []);
+          
+          const mappedNotifications = data.notifications || data.logs || [];
+          setNotifications(mappedNotifications);
+          
           setUnreadCount(data.unread_count || 0);
-          setTotalCount(data.total_count || 0);
-          console.log('Notifications loaded successfully:', data.notifications?.length || 0, 'notifications');
-        } else if (isMounted) {
+          setTotalCount(data.total_count || mappedNotifications.length || 0);
+          console.log('Notifications loaded successfully:', mappedNotifications.length, 'notifications');
+        } else if (isMounted && data.status === 'error') {
           setError(data.message || 'Failed to load notifications');
         }
       } catch (err) {
@@ -387,7 +392,7 @@ const TenantNotificationsPanel: React.FC = () => {
 
       {/* Notifications list */}
       <div className="space-y-3">
-        {notifications.length === 0 ? (
+        {!notifications || notifications.length === 0 ? (
           <div className="text-center py-12">
             <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications</h3>

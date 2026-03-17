@@ -513,7 +513,7 @@ const DashBoard = () => {
   const isPaid = tenantData?.payment_status === 'Paid';
 
   return (
-    <div className="p-5 w-full">
+    <div className="p-4 sm:p-5 w-full overflow-x-hidden">
       {/* Header */}
       <div className="animate-fade-in">
         <h1 className="text-gray-900 font-semibold text-xl mb-2">
@@ -633,8 +633,8 @@ const DashBoard = () => {
 
           {/* Payment Modal */}
           {showPaymentModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 animate-slide-up">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in px-4">
+              <div className="bg-white rounded-lg p-5 sm:p-6 w-full max-w-md animate-slide-up">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Select Payment Method</h3>
                   <button 
@@ -981,7 +981,7 @@ const DashBoard = () => {
         
         {/* Rent History Table */}
         {!loadingRentHistory && !rentHistoryError && (
-          <div className="w-full bg-white mt-4 border border-gray-400 rounded-t-2xl rounded-b-lg overflow-x-scroll lg:overflow-x-hidden relative animate-slide-up">
+          <div className="w-full bg-white mt-4 border border-gray-400 rounded-t-2xl rounded-b-lg overflow-x-auto relative animate-slide-up">
             {rentHistory.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />

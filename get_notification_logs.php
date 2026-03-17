@@ -90,43 +90,6 @@ try {
         exit();
     }
     
-    // Create sample data if table doesn't exist or is empty
-    $sample_data = [
-        [
-            'id' => 'N-001',
-            'tenant_id' => 'T-001',
-            'type' => 'reminder',
-            'title' => 'Rent Due Reminder',
-            'message' => 'Your December rent of $2,500 is due on December 5, 2025. Please ensure timely payment.',
-            'channel' => 'Email',
-            'status' => 'sent',
-            'sent_date' => '2025-12-02 09:00:00',
-            'read_status' => 0
-        ],
-        [
-            'id' => 'N-002',
-            'tenant_id' => 'T-001',
-            'type' => 'payment',
-            'title' => 'Payment Confirmed',
-            'message' => 'Your November rent payment of $2,500 has been received and confirmed.',
-            'channel' => 'SMS',
-            'status' => 'sent',
-            'sent_date' => '2025-11-05 14:30:00',
-            'read_status' => 1
-        ],
-        [
-            'id' => 'N-003',
-            'tenant_id' => 'T-001',
-            'type' => 'overdue',
-            'title' => 'Overdue Payment Alert',
-            'message' => 'Your October rent payment is overdue. Please make payment immediately to avoid penalties.',
-            'channel' => 'Email',
-            'status' => 'sent',
-            'sent_date' => '2025-10-10 10:00:00',
-            'read_status' => 0
-        ]
-    ];
-    
     // Try to fetch from database first
     try {
         $sql = "SELECT 
@@ -166,54 +129,13 @@ try {
             ];
         }
         
-        // If no data found in database, use sample data
-        if (empty($notifications)) {
-            $notifications = [];
-            foreach ($sample_data as $sample) {
-                if ($sample['tenant_id'] === $tenant_id) {
-                    $status = 'Sent';
-                    if ($sample['read_status'] == 1) {
-                        $status = 'Read';
-                    } elseif ($sample['status'] == 'failed') {
-                        $status = 'Failed';
-                    }
-                    
-                    $notifications[] = [
-                        'id' => $sample['id'],
-                        'type' => $sample['type'],
-                        'recipient' => 'John Smith (T-001)',
-                        'message' => $sample['message'],
-                        'channel' => $sample['channel'],
-                        'status' => $status,
-                        'sentDate' => date('Y-m-d h:i A', strtotime($sample['sent_date']))
-                    ];
-                }
-            }
-        }
-        
     } catch (PDOException $db_error) {
-        // If database query fails, use sample data
-        $notifications = [];
-        foreach ($sample_data as $sample) {
-            if ($sample['tenant_id'] === $tenant_id) {
-                $status = 'Sent';
-                if ($sample['read_status'] == 1) {
-                    $status = 'Read';
-                } elseif ($sample['status'] == 'failed') {
-                    $status = 'Failed';
-                }
-                
-                $notifications[] = [
-                    'id' => $sample['id'],
-                    'type' => $sample['type'],
-                    'recipient' => 'John Smith (T-001)',
-                    'message' => $sample['message'],
-                    'channel' => $sample['channel'],
-                    'status' => $status,
-                    'sentDate' => date('Y-m-d h:i A', strtotime($sample['sent_date']))
-                ];
-            }
-        }
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Database error: ' . $db_error->getMessage()
+        ]);
+        exit();
     }
     
     // Calculate statistics

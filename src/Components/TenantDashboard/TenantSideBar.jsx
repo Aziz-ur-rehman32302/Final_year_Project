@@ -2,11 +2,7 @@ import { Bell } from 'lucide-react'
 
 const TenantSideBar = ({ sidebarOpen, activeSection, triggerTenantNotification, triggerTenantDastBoard }) => {
   return (
-    <aside
-      className={`bg-white p-4 lg:p-6 h-full ${
-        sidebarOpen ? 'block' : 'hidden lg:block'
-      }`}
-    >
+    <aside className="bg-white p-4 lg:p-6 h-full w-full">
       <nav className="space-y-3">
         <button
           type="button"

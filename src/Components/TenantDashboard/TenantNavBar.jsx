@@ -8,10 +8,12 @@ import {
   Building2 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { logoutUser } from '../../utils/auth';
+import { logoutUser, getUser } from '../../utils/auth';
 
 const TenantNavBar = ({sidebarOpen,setSidebarOpen}) => {
   const navigate = useNavigate();
+  const user = getUser();
+  const tenantName = user?.username || user?.name || 'Tenant Portal';
   const handleLogout = () => {
     logoutUser();
     navigate('/tenant-login');
@@ -25,9 +27,9 @@ const TenantNavBar = ({sidebarOpen,setSidebarOpen}) => {
             <div className='flex '>
                  <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors mr-2"
             >
-              {!sidebarOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
+              {sidebarOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
             </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -38,7 +40,7 @@ const TenantNavBar = ({sidebarOpen,setSidebarOpen}) => {
             </div>
             <div className="flex items-center gap-4">
             <span className="text-black text-lg  relative 
-             cursor-pointer after:content-[''] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:w-0  after:bg-black after:transition-all after:duration-500 hover:after:left-0  hover:after:w-full font-medium hidden sm:inline">Tenant Portal</span>
+             cursor-pointer after:content-[''] after:absolute after:left-1/2 after:bottom-0 after:h-[2px] after:w-0  after:bg-black after:transition-all after:duration-500 hover:after:left-0  hover:after:w-full font-medium hidden sm:inline">{tenantName}</span>
             <button
                onClick={handleLogout}
               className="flex items-center font-semibold bg-blue-400 cursor-pointer gap-2 px-4 py-2 text-black  active:scale-95 hover:bg-blue-600 rounded-lg transition-colors"

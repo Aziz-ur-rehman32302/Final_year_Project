@@ -30,6 +30,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Start session for tenant authentication
 session_start();
 
+// Database connection
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "plaza_management_system";
+
+try {
+    $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['status' => 'error', 'message' => 'Database connection failed']);
+    exit();
+}
+
 // Handle both GET and POST methods
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Get tenant ID from POST body
@@ -72,125 +87,51 @@ if (!$tenant_id) {
     exit();
 }
 
-// Sample tenant data
-$tenant_data = [
-    'T-001' => [
-        'name' => 'John Smith',
-        'notifications' => [
-            [
-                'id' => 'TN-001',
-                'type' => 'reminder',
-                'title' => 'Rent Due Reminder',
-                'message' => 'Your December rent of $2,500 is due on December 15, 2025. Please ensure timely payment to avoid late fees.',
-                'timestamp' => '2025-12-10 09:00:00',
-                'read' => false,
-                'priority' => 'medium'
-            ],
-            [
-                'id' => 'TN-002',
-                'type' => 'payment',
-                'title' => 'Payment Confirmed',
-                'message' => 'Your November rent payment of $2,500 has been received and confirmed. Thank you!',
-                'timestamp' => '2025-11-05 14:30:00',
-                'read' => true,
-                'priority' => 'low'
-            ],
-            [
-                'id' => 'TN-003',
-                'type' => 'announcement',
-                'title' => 'Scheduled Maintenance',
-                'message' => 'Building maintenance is scheduled for December 20, 2025 from 9:00 AM to 12:00 PM. Water supply may be temporarily interrupted.',
-                'timestamp' => '2025-12-08 16:45:00',
-                'read' => false,
-                'priority' => 'high'
-            ],
-            [
-                'id' => 'TN-004',
-                'type' => 'announcement',
-                'title' => 'Holiday Notice',
-                'message' => 'The management office will be closed on December 25th and January 1st. Emergency contact: +1-555-0199',
-                'timestamp' => '2025-12-01 10:00:00',
-                'read' => true,
-                'priority' => 'low'
-            ]
-        ]
-    ],
-    'T-002' => [
-        'name' => 'Sarah Johnson',
-        'notifications' => [
-            [
-                'id' => 'TN-005',
-                'type' => 'overdue',
-                'title' => 'Overdue Payment Alert',
-                'message' => 'Your November rent payment is overdue. Please make payment immediately to avoid additional penalties.',
-                'timestamp' => '2025-12-05 11:30:00',
-                'read' => false,
-                'priority' => 'high'
-            ],
-            [
-                'id' => 'TN-006',
-                'type' => 'reminder',
-                'title' => 'Lease Renewal Notice',
-                'message' => 'Your lease expires on March 31, 2026. Please contact the office to discuss renewal options.',
-                'timestamp' => '2025-12-03 15:20:00',
-                'read' => false,
-                'priority' => 'medium'
-            ],
-            [
-                'id' => 'TN-007',
-                'type' => 'announcement',
-                'title' => 'New Parking Rules',
-                'message' => 'New parking regulations will take effect January 1st, 2026. Please review the updated guidelines.',
-                'timestamp' => '2025-12-01 14:00:00',
-                'read' => true,
-                'priority' => 'low'
-            ]
-        ]
-    ]
-];
-
-// Get notifications for the specific tenant
-if (isset($tenant_data[$tenant_id])) {
-    $tenant_info = $tenant_data[$tenant_id];
-    $notifications = $tenant_info['notifications'];
+try {
+    // Determine tenant name 
+    $tenant_name = "Tenant " . $tenant_id;
     
-    // Calculate counts
-    $total_count = count($notifications);
+    // Get notifications from database
+    $sql = "SELECT id, type, title, message, sent_date as timestamp, read_status, 'medium' as priority 
+            FROM notification_logs 
+            WHERE tenant_id = :tenant_id AND (is_deleted = 0 OR is_deleted IS NULL)
+            ORDER BY sent_date DESC";
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':tenant_id', $tenant_id);
+    $stmt->execute();
+    
+    $notifications = [];
     $unread_count = 0;
     
-    foreach ($notifications as $notification) {
-        if (!$notification['read']) {
-            $unread_count++;
-        }
+    while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $is_read = (bool)$row['read_status'];
+        if (!$is_read) $unread_count++;
+        
+        $notifications[] = [
+            'id' => $row['id'],
+            'type' => $row['type'],
+            'title' => $row['title'] ?: ucfirst($row['type']) . ' Notification',
+            'message' => $row['message'],
+            'timestamp' => $row['timestamp'],
+            'read' => $is_read,
+            'read_status' => $is_read,
+            'priority' => $row['priority'] ?: 'medium'
+        ];
     }
     
     echo json_encode([
         'status' => 'success',
         'tenant_id' => $tenant_id,
-        'tenant_name' => $tenant_info['name'],
-        'notifications' => array_map(function($notification) {
-            return [
-                'id' => $notification['id'],
-                'type' => $notification['type'],
-                'title' => $notification['title'],
-                'message' => $notification['message'],
-                'timestamp' => $notification['timestamp'],
-                'read_status' => $notification['read'],
-                'priority' => $notification['priority']
-            ];
-        }, $notifications),
+        'tenant_name' => $tenant_name,
+        'notifications' => $notifications,
         'unread_count' => $unread_count,
-        'total_count' => $total_count
+        'total_count' => count($notifications)
     ]);
-} else {
-    // Tenant not found, return empty notifications
+} catch(PDOException $e) {
+    http_response_code(500);
     echo json_encode([
-        'status' => 'success',
-        'tenant_id' => $tenant_id,
-        'tenant_name' => 'Unknown Tenant',
-        'notifications' => [],
-        'unread_count' => 0,
-        'total_count' => 0
+        'status' => 'error',
+        'message' => 'Database error: ' . $e->getMessage()
     ]);
 }
 ?>

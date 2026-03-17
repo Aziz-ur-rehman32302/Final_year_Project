@@ -11,6 +11,7 @@ import {
   Settings,
   RefreshCw,
 } from 'lucide-react';
+import { getUser } from '../../utils/auth';
 
 // TypeScript interfaces
 interface TenantNotification {
@@ -19,13 +20,15 @@ interface TenantNotification {
   title: string;
   message: string;
   channel: 'Email' | 'SMS' | 'Push';
-  status: 'Sent' | 'Failed' | 'Read';
+  status: 'new' | 'read' | 'resolved';
   sentDate: string;
+  timestamp?: string;
 }
 
 interface ApiResponse {
   status: 'success' | 'error';
-  logs: TenantNotification[];
+  notifications?: TenantNotification[];
+  logs?: TenantNotification[];
   message?: string;
 }
 
@@ -37,20 +40,19 @@ interface MarkReadResponse {
 const TenantNotification: React.FC = () => {
   // Get logged-in tenant ID from localStorage or context
   const getLoggedInTenantId = (): string => {
-    // Try to get tenant ID from localStorage first
+    // Try to get tenant ID from the authenticated user first
+    try {
+      const currentUser = getUser();
+      if (currentUser) {
+        return currentUser.id?.toString() || currentUser.user_id?.toString() || currentUser.tenant_id?.toString() || currentUser.shop_number?.toString() || 'T-001';
+      }
+    } catch (e) {
+      console.warn('Failed to parse user', e);
+    }
+    
+    // Fallback: try to get from localStorage
     const tenantId = localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');
     if (tenantId) return tenantId;
-    
-    // Fallback: try to get from token or other storage
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        return payload.tenantId || payload.tenant_id || 'T-001';
-      } catch {
-        return 'T-001'; // Default fallback
-      }
-    }
     
     return 'T-001'; // Default tenant ID
   };
@@ -62,6 +64,19 @@ const TenantNotification: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [markingRead, setMarkingRead] = useState<string>(''); // ID of notification being marked as read
   const [loggedInTenantId] = useState<string>(getLoggedInTenantId());
+  
+  // Payment Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
+  const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
+  const [paymentError, setPaymentError] = useState<string>('');
+  const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
+  const [activeNotificationId, setActiveNotificationId] = useState<string | null>(null);
+
+  // Preference State
+  const [preferences, setPreferences] = useState({ email: true, sms: true, push: false });
+  const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+  const [preferenceSuccess, setPreferenceSuccess] = useState(false);
 
   // Fetch tenant-specific notifications from API
   const fetchNotifications = useCallback(async (showLoading = false) => {
@@ -70,7 +85,7 @@ const TenantNotification: React.FC = () => {
       setError('');
       
       const response = await fetch(
-        `http://localhost/plaza_management_system_backend/get_notification_logs.php?tenant_id=${loggedInTenantId}`,
+        `http://localhost/plaza_management_system_backend/get_tenant_notifications.php?tenant_id=${loggedInTenantId}`,
         {
           method: 'GET',
           credentials: 'include', // CRITICAL: Include cookies/session
@@ -87,18 +102,29 @@ const TenantNotification: React.FC = () => {
       
       const data: ApiResponse = await response.json();
       
+      console.log('API Response:', data); // Debugging response structure
+      
       if (data.status === 'success') {
-        const notifications = data.logs || [];
+        const notifications = data.notifications || [];
         
         // Sort notifications by date (newest first)
-        const sortedNotifications = notifications.sort((a, b) => 
-          new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime()
-        );
+        const sortedNotifications = notifications.sort((a, b) => {
+          const dateB = b.sentDate || b.timestamp || '';
+          const dateA = a.sentDate || a.timestamp || '';
+          return new Date(dateB).getTime() - new Date(dateA).getTime();
+        });
         
-        setTenantNotifications(sortedNotifications);
+        // Ensure proper mapping to TenantNotification
+        const normalizedNotifications: TenantNotification[] = sortedNotifications.map((n: any) => ({
+          ...n,
+          status: n.status || 'new',
+          sentDate: n.sentDate || n.timestamp || new Date().toISOString()
+        }));
         
-        // Calculate unread count (notifications that are not "Read")
-        const unread = sortedNotifications.filter(notification => notification.status !== 'Read').length;
+        setTenantNotifications(normalizedNotifications);
+        
+        // Calculate unread count (notifications that are 'new')
+        const unread = normalizedNotifications.filter(notification => notification.status === 'new').length;
         setUnreadCount(unread);
       } else {
         throw new Error(data.message || 'Failed to load notifications');
@@ -117,7 +143,7 @@ const TenantNotification: React.FC = () => {
     
     // Find the notification to check if it's already read
     const notification = tenantNotifications.find(n => n.id === notificationId);
-    if (!notification || notification.status === 'Read') return;
+    if (!notification || notification.status === 'read' || notification.status === 'resolved') return;
     
     try {
       setMarkingRead(notificationId);
@@ -146,7 +172,7 @@ const TenantNotification: React.FC = () => {
         setTenantNotifications(prev => 
           prev.map(notification => 
             notification.id === notificationId 
-              ? { ...notification, status: 'Read' as const }
+              ? { ...notification, status: 'read' as const }
               : notification
           )
         );
@@ -167,12 +193,117 @@ const TenantNotification: React.FC = () => {
   // Initial fetch and polling setup
   useEffect(() => {
     fetchNotifications(true);
+    fetchPreferences();
     
     // Poll for new notifications every 30 seconds
     const interval = setInterval(() => fetchNotifications(false), 30000);
     
     return () => clearInterval(interval);
   }, [fetchNotifications]);
+  
+  // Fetch Preferences
+  const fetchPreferences = async () => {
+    try {
+      const response = await fetch(`http://localhost/plaza_management_system_backend/get_tenant_notification_preferences.php?tenant_id=${loggedInTenantId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === 'success' && data.data?.preferences) {
+          setPreferences(data.data.preferences);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load preferences', e);
+    }
+  };
+
+  // Update Preferences
+  const updatePreferences = async () => {
+    setIsUpdatingPreferences(true);
+    setPreferenceSuccess(false);
+    try {
+      const response = await fetch('http://localhost/plaza_management_system_backend/update_tenant_notification_preferences.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          tenant_id: loggedInTenantId,
+          enable_email: preferences.email,
+          enable_sms: preferences.sms,
+          enable_push: preferences.push
+        })
+      });
+      if (response.ok) {
+        setPreferenceSuccess(true);
+        setTimeout(() => setPreferenceSuccess(false), 3000);
+      }
+    } catch (e) {
+      console.error('Failed to update preferences', e);
+    } finally {
+      setIsUpdatingPreferences(false);
+    }
+  };
+  
+  const togglePreference = (key: 'email' | 'sms' | 'push') => {
+    setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Payment UI Handlers
+  const handleResolveClick = (notificationId: string) => {
+    setActiveNotificationId(notificationId);
+    setShowPaymentModal(true);
+    setPaymentError('');
+    setSelectedPaymentMethod('');
+  };
+
+  const closePaymentModal = () => {
+    setShowPaymentModal(false);
+    setActiveNotificationId(null);
+  };
+
+  const processPayment = async () => {
+    if (!selectedPaymentMethod) {
+      setPaymentError('Please select a payment method');
+      return;
+    }
+    
+    setIsProcessingPayment(true);
+    setPaymentError('');
+    
+    try {
+      // Simulate network request for payment
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      if (activeNotificationId) {
+        const resolveResponse = await fetch('http://localhost/plaza_management_system_backend/resolve_notification.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notification_id: activeNotificationId })
+        });
+        
+        if (resolveResponse.ok) {
+           setTenantNotifications(prev => 
+             prev.map(n => n.id === activeNotificationId ? { ...n, status: 'resolved' as const } : n)
+           );
+           // Calculate proper unread drop locally if changing from 'new' -> 'resolved'
+           const targetNotification = tenantNotifications.find(n => n.id === activeNotificationId);
+           if (targetNotification && targetNotification.status === 'new') {
+              setUnreadCount(prev => Math.max(0, prev - 1));
+           }
+        }
+      }
+      
+      setPaymentSuccess(true);
+      
+      setTimeout(() => {
+        setPaymentSuccess(false);
+        closePaymentModal();
+      }, 2000);
+      
+    } catch (err) {
+      setPaymentError('Payment failed. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
 
   // Helper functions for icons and colors
   const getTypeIcon = (type: string) => {
@@ -227,16 +358,16 @@ const TenantNotification: React.FC = () => {
     }
   };
 
-  const isUnread = (notification: TenantNotification) => notification.status !== 'Read';
+  const isUnread = (notification: any) => notification.status === 'new';
 
   // Calculate read count
   const readCount = tenantNotifications.length - unreadCount;
 
   return (
-    <div className="p-6 w-full bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 w-full overflow-x-hidden bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
           <div className="flex items-center gap-3">
             <Bell className="w-7 h-7 text-blue-600" />
             <div>
@@ -263,7 +394,7 @@ const TenantNotification: React.FC = () => {
             </button>
           </div>
         </div>
-        <p className="text-gray-600 text-lg">
+        <p className="text-gray-600 text-base sm:text-lg">
           Stay updated with your rent reminders, payment confirmations, and overdue alerts.
         </p>
       </div>
@@ -337,29 +468,162 @@ const TenantNotification: React.FC = () => {
 
           {/* Notification Preferences Panel */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <Settings className="w-6 h-6 text-blue-600" />
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <Settings className="w-6 h-6 text-blue-600 mt-1" />
                 <div>
                   <h3 className="text-lg font-semibold text-blue-900">Notification Preferences</h3>
                   <p className="text-blue-700 mt-1">
-                    You are receiving rent-related notifications via Email and SMS. 
-                    <button className="ml-2 text-blue-600 hover:text-blue-800 underline font-medium">
-                      Update preferences
-                    </button>
+                    Select the channels you wish to receive rent-related notifications on.
                   </p>
+                  {preferenceSuccess && (
+                     <p className="text-green-600 font-medium mt-2 text-sm">Preferences updated successfully!</p>
+                  )}
                 </div>
               </div>
-              <div className="flex gap-2">
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  <Mail className="w-3 h-3" /> Email
-                </span>
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  <MessageSquare className="w-3 h-3" /> SMS
-                </span>
+              <div className="flex flex-col items-end gap-3 min-w-[200px]">
+                <div className="flex flex-wrap gap-2">
+                  <label className="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="hidden" checked={preferences.email} onChange={() => togglePreference('email')} />
+                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-colors ${preferences.email ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'}`}>
+                      <Mail className="w-3 h-3" /> Email
+                    </span>
+                  </label>
+                  <label className="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="hidden" checked={preferences.sms} onChange={() => togglePreference('sms')} />
+                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-colors ${preferences.sms ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'}`}>
+                      <MessageSquare className="w-3 h-3" /> SMS
+                    </span>
+                  </label>
+                  <label className="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="hidden" checked={preferences.push} onChange={() => togglePreference('push')} />
+                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-colors ${preferences.push ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'}`}>
+                      <Smartphone className="w-3 h-3" /> Dashboard
+                    </span>
+                  </label>
+                </div>
+                <button
+                  onClick={updatePreferences}
+                  disabled={isUpdatingPreferences}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all text-white text-sm font-semibold rounded-lg disabled:opacity-50"
+                >
+                  {isUpdatingPreferences ? 'Saving...' : 'Update preferences'}
+                </button>
               </div>
             </div>
           </div>
+
+          {/* Payment Modal Overlay */}
+          {showPaymentModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] px-4 animate-fade-in backdrop-blur-sm">
+              <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md animate-slide-up transform transition-all">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-gray-900 border-b pb-2 w-full">Resolve Overdue Rent</h3>
+                  <button 
+                    onClick={closePaymentModal}
+                    className="absolute top-6 right-6 p-2 bg-gray-100 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-full transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                  </button>
+                </div>
+                
+                {paymentSuccess ? (
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600">
+                      <CheckCircle className="w-10 h-10" />
+                    </div>
+                    <h4 className="text-xl font-bold text-gray-900 mb-2">Payment Successful!</h4>
+                    <p className="text-gray-500 text-center">Your rent has been paid. The notification will now be marked as read.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-6">
+                      <p className="text-gray-600 mb-4 text-sm font-medium">Please select a digital payment method to settle your overdue balance.</p>
+                      
+                      {/* Payment Method Selection */}
+                      <div className="space-y-3">
+                        <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${selectedPaymentMethod === 'JazzCash' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300 hover:bg-gray-50'}`}>
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="JazzCash"
+                            checked={selectedPaymentMethod === 'JazzCash'}
+                            onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                            className="hidden"
+                          />
+                          <div className="flex items-center w-full">
+                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-4 shadow-sm">
+                              <span className="text-purple-700 font-bold text-lg">J</span>
+                            </div>
+                            <span className="font-semibold text-gray-800 text-lg">JazzCash</span>
+                            <div className="ml-auto">
+                               {selectedPaymentMethod === 'JazzCash' && <CheckCircle className="w-6 h-6 text-purple-600" />}
+                            </div>
+                          </div>
+                        </label>
+                        
+                        <label className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${selectedPaymentMethod === 'EasyPaisa' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300 hover:bg-gray-50'}`}>
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="EasyPaisa"
+                            checked={selectedPaymentMethod === 'EasyPaisa'}
+                            onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                            className="hidden"
+                          />
+                          <div className="flex items-center w-full">
+                            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4 shadow-sm">
+                              <span className="text-green-700 font-bold text-lg">E</span>
+                            </div>
+                            <span className="font-semibold text-gray-800 text-lg">EasyPaisa</span>
+                            <div className="ml-auto">
+                               {selectedPaymentMethod === 'EasyPaisa' && <CheckCircle className="w-6 h-6 text-green-600" />}
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {/* Error Message */}
+                    {paymentError && (
+                      <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-start shadow-sm">
+                        <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm font-medium">{paymentError}</p>
+                      </div>
+                    )}
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-4 mt-8">
+                      <button
+                        onClick={closePaymentModal}
+                        className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={processPayment}
+                        disabled={isProcessingPayment || !selectedPaymentMethod}
+                        className={`flex-1 px-4 py-3 font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
+                          isProcessingPayment || !selectedPaymentMethod
+                            ? 'bg-blue-300 text-blue-50 cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg active:scale-95'
+                        }`}
+                      >
+                        {isProcessingPayment ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          'Pay Now'
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Notifications List */}
           {tenantNotifications.length === 0 ? (
@@ -403,8 +667,8 @@ const TenantNotification: React.FC = () => {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <h3 className={`text-lg font-semibold ${isUnread(notification) ? 'text-gray-900' : 'text-gray-700'}`}>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className={`text-base sm:text-lg font-semibold ${isUnread(notification) ? 'text-gray-900' : 'text-gray-700'}`}>
                             {notification.title}
                           </h3>
                           {isUnread(notification) && (
@@ -412,7 +676,7 @@ const TenantNotification: React.FC = () => {
                               New
                             </span>
                           )}
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border capitalize ${getTypeColor(notification.type)}`}>
+                          <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium border capitalize ${getTypeColor(notification.type)}`}>
                             {notification.type}
                           </span>
                         </div>
@@ -430,18 +694,32 @@ const TenantNotification: React.FC = () => {
                         <Clock className="w-4 h-4" />
                         <span>{notification.sentDate}</span>
                         <span className="mx-2">•</span>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          notification.status === 'Read' ? 'bg-green-100 text-green-700' : 
-                          notification.status === 'Sent' ? 'bg-blue-100 text-blue-700' : 
-                          'bg-red-100 text-red-700'
+                        <span className={`px-2 py-1 rounded text-xs font-medium text-white ${
+                          notification.status === 'resolved' ? 'bg-green-500' : 
+                          notification.status === 'read' ? 'bg-blue-500' : 
+                          'bg-orange-500'
                         }`}>
-                          {notification.status}
+                          {notification.status === 'new' ? 'Pending Action' : notification.status === 'read' ? 'Read' : 'Paid / Completed'}
                         </span>
                       </div>
                       
                       {isUnread(notification) && (
-                        <div className="mt-3 text-sm text-blue-600 font-medium">
-                          Click to mark as read
+                        <div className="mt-4 flex gap-3">
+                          {notification.type === 'overdue' ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleResolveClick(notification.id); }}
+                              className="px-5 py-2 flex-grow sm:flex-grow-0 items-center justify-center bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors active:scale-95 shadow-sm"
+                            >
+                              Resolve
+                            </button>
+                          ) : (
+                            <button
+                               onClick={(e) => { e.stopPropagation(); markAsRead(notification.id); }}
+                               className="px-5 py-2 flex-grow sm:flex-grow-0 items-center justify-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors active:scale-95 shadow-sm"
+                            >
+                               Mark as Read
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
