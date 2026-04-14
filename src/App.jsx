@@ -47,6 +47,15 @@ const App = () => {
               </ProtectedRoute>
             } 
           />
+
+          {/* Security Routes strictly for mapping requirements (they point to AdminBoard) */}
+          <Route path="/admin/security-dashboard" element={<ProtectedRoute requiredRole="admin"><AdminBoard/></ProtectedRoute>} />
+          <Route path="/admin/security-guards" element={<ProtectedRoute requiredRole="admin"><AdminBoard/></ProtectedRoute>} />
+          <Route path="/admin/security-visitors" element={<ProtectedRoute requiredRole="admin"><AdminBoard/></ProtectedRoute>} />
+          <Route path="/admin/security-cameras" element={<ProtectedRoute requiredRole="admin"><AdminBoard/></ProtectedRoute>} />
+          <Route path="/admin/security-incidents" element={<ProtectedRoute requiredRole="admin"><AdminBoard/></ProtectedRoute>} />
+          <Route path="/admin/security-alerts" element={<ProtectedRoute requiredRole="admin"><AdminBoard/></ProtectedRoute>} />
+
           <Route 
             path="/tenant-dashboard" 
             element={

@@ -3,6 +3,7 @@ import TenantNavBar from './TenantNavBar';
 import TenantSideBar from './TenantSideBar';
 import DashBoard from './DashBoard';
 import TenantNotification from './TenantNotification';
+import EmergencyAlertSystem from '../../modules/security/EmergencyAlertSystem';
 
 const TenantDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -38,6 +39,9 @@ const TenantDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 w-full flex flex-col overflow-x-hidden">
+      {/* Emergency Alert Overlay — fixed position, does NOT affect layout */}
+      <EmergencyAlertSystem />
+
       {/* Tenant top navigation (logout, branding) */}
       <TenantNavBar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
