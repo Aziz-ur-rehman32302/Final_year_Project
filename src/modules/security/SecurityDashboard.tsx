@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Users, AlertTriangle, Video, CheckCircle, XCircle } from 'lucide-react';
+import { API_BASE_URL as BASE_URL } from '../../config';
 
-const API_BASE_URL = 'http://localhost/plaza_management_system_backend/api/security';
+const API_BASE_URL = BASE_URL + '/api/security';
 
 export default function SecurityDashboard() {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<any>({
     guards_on_duty: 0,
     visitors_inside: 0,
     active_incidents: 0,
     offline_cameras: 0
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const fetchStats = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/dashboard/dashboard_stats.php`);
       const data = await res.json();
-      if (data.success) {
-        setStats(data.data);
+      if (data && data.success) {
+        setStats(data.data || {
+          guards_on_duty: 0,
+          visitors_inside: 0,
+          active_incidents: 0,
+          offline_cameras: 0
+        });
       }
     } catch (err) {
       console.error('Failed to fetch stats', err);

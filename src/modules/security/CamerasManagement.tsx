@@ -1,28 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Video, AlertTriangle, PlusCircle, CheckCircle, Clock, Trash2, X, Activity } from 'lucide-react';
 import StatCard from '../../Components/StatCard';
+import { API_BASE_URL as BASE_URL } from '../../config';
 
-const API_BASE_URL = 'http://localhost/plaza_management_system_backend/api/security';
+const API_BASE_URL = BASE_URL + '/api/security';
 
 export default function CamerasManagement() {
-  const [cameras, setCameras] = useState([]);
+  const [cameras, setCameras] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, working: 0, offline: 0, maintenance: 0 });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   
   // Add Camera Form State
   const [formData, setFormData] = useState({ camera_name: '', location: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Delete Camera State
-  const [cameraToDelete, setCameraToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [cameraToDelete, setCameraToDelete] = useState<string | number | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   const fetchCameras = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/cameras/list.php`);
       const data = await res.json();
-      if (data.success) {
-        setCameras(data.cameras);
+      if (data && data.success) {
+        setCameras(data.cameras || []);
       }
     } catch (err) {
       console.error('Failed to fetch cameras', err);
@@ -36,7 +37,7 @@ export default function CamerasManagement() {
       const res = await fetch(`${API_BASE_URL}/cameras/network_stats.php`);
       const data = await res.json();
       if (data) {
-        setStats(data);
+        setStats(data || { total: 0, working: 0, offline: 0, maintenance: 0 });
       }
     } catch (err) {
       console.error('Failed to fetch network stats', err);
@@ -55,7 +56,7 @@ export default function CamerasManagement() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleUpdateStatus = async (cameraId, newStatus) => {
+  const handleUpdateStatus = async (cameraId: string | number, newStatus: string) => {
     try {
       await fetch(`${API_BASE_URL}/cameras/update_status.php`, {
         method: 'POST',
@@ -69,7 +70,7 @@ export default function CamerasManagement() {
     }
   };
 
-  const handleAddCamera = async (e) => {
+  const handleAddCamera = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
@@ -118,7 +119,7 @@ export default function CamerasManagement() {
     }
   };
 
-  const offlineCameras = cameras.filter(c => c.status === 'OFFLINE');
+  const offlineCameras = (Array.isArray(cameras) ? cameras : []).filter(c => c?.status === 'OFFLINE');
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 relative">
@@ -201,20 +202,20 @@ export default function CamerasManagement() {
           
           {/* Strict 3-Per-Row Auto-Wrapping Grid */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 w-full">
-            {cameras.map(cam => (
-              <div key={cam.id} className={`p-5 rounded-xl border-2 transition-colors flex flex-col justify-between w-full min-w-0 bg-white ${cam.status === 'OFFLINE' ? 'border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : cam.status === 'MAINTENANCE' ? 'border-orange-300' : 'border-gray-200'}`}>
+            {(Array.isArray(cameras) ? cameras : []).map(cam => (
+              <div key={cam.id} className={`p-5 rounded-xl border-2 transition-colors flex flex-col justify-between w-full min-w-0 bg-white ${cam?.status === 'OFFLINE' ? 'border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : cam?.status === 'MAINTENANCE' ? 'border-orange-300' : 'border-gray-200'}`}>
                 
                 {/* Top Row: Icon/Name & Status */}
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-2">
-                    <Video className={`w-5 h-5 flex-shrink-0 ${cam.status === 'OFFLINE' ? 'text-red-500 animate-pulse' : cam.status === 'MAINTENANCE' ? 'text-orange-500' : 'text-blue-500'}`} />
-                    <h3 className="font-extrabold text-gray-900 truncate max-w-[140px] text-lg">{cam.camera_name}</h3>
+                    <Video className={`w-5 h-5 flex-shrink-0 ${cam?.status === 'OFFLINE' ? 'text-red-500 animate-pulse' : cam?.status === 'MAINTENANCE' ? 'text-orange-500' : 'text-blue-500'}`} />
+                    <h3 className="font-extrabold text-gray-900 truncate max-w-[140px] text-lg">{cam?.camera_name || 'Unnamed Camera'}</h3>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded font-black border uppercase ${
-                    cam.status === 'WORKING' ? 'bg-green-100 text-green-800 border-green-300' : 
-                    cam.status === 'OFFLINE' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-orange-100 text-orange-800 border-orange-300'
+                    cam?.status === 'WORKING' ? 'bg-green-100 text-green-800 border-green-300' : 
+                    cam?.status === 'OFFLINE' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-orange-100 text-orange-800 border-orange-300'
                   }`}>
-                    {cam.status}
+                    {cam?.status || 'UNKNOWN'}
                   </span>
                 </div>
                 
@@ -222,17 +223,17 @@ export default function CamerasManagement() {
                 <div className="flex flex-col gap-3 mb-5 text-left border-t border-gray-100 pt-4 relative flex-1">
                    <div>
                      <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0.5">Location</p>
-                     <p className="text-sm text-gray-800 font-semibold truncate">{cam.location}</p>
+                     <p className="text-sm text-gray-800 font-semibold truncate">{cam?.location || 'Unknown location'}</p>
                    </div>
                    
                    <div>
                      <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-0.5">Last Maintained</p>
-                     <p className="text-sm text-gray-800 font-semibold">{cam.last_maintenance_date ? new Date(cam.last_maintenance_date).toLocaleDateString() : 'Initial Setup'}</p>
+                     <p className="text-sm text-gray-800 font-semibold">{cam?.last_maintenance_date ? new Date(cam.last_maintenance_date).toLocaleDateString() : 'Initial Setup'}</p>
                    </div>
-
+                   
                    <div className="mt-2 text-left w-full relative z-10">
                      <select 
-                       value={cam.status} 
+                       value={cam?.status || 'WORKING'} 
                        onChange={(e) => handleUpdateStatus(cam.id, e.target.value)}
                        className="text-sm font-bold border border-gray-300 p-2 rounded-md w-full bg-gray-50 outline-none focus:border-blue-500 focus:bg-white cursor-pointer transition-colors"
                      >
@@ -251,7 +252,7 @@ export default function CamerasManagement() {
                 </div>
               </div>
             ))}
-            {cameras.length === 0 && !loading && (
+            {!loading && cameras.length === 0 && (
                <div className="col-span-full p-8 text-center bg-gray-50 rounded border-2 border-dashed border-gray-300 text-gray-500 font-medium h-48 flex items-center justify-center">No cameras installed in the system. Install your first camera from the form above.</div>
             )}
           </div>

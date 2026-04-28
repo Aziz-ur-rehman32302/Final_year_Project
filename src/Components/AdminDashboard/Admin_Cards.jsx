@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react'
 import { 
   LayoutDashboard, 
@@ -33,7 +34,7 @@ const Admin_Cards = () => {
         
         console.log('🔄 Fetching rent summary from API...');
 
-        const response = await fetch('http://localhost/plaza_management_system_backend/rent_summary.php', {
+        const response = await fetch(API_BASE_URL + '/rent_summary.php', {
           method: 'GET',
           credentials: 'include',
           headers: {

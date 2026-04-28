@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Users, LogOut } from 'lucide-react';
+import { API_BASE_URL as BASE_URL } from '../../config';
 
-const API_BASE_URL = 'http://localhost/plaza_management_system_backend/api/security';
+const API_BASE_URL = BASE_URL + '/api/security';
 
 export default function VisitorGateEntry() {
-  const [currentVisitors, setCurrentVisitors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [currentVisitors, setCurrentVisitors] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [formData, setFormData] = useState({
     name: '', phone: '', purpose: '', shop_id: ''
   });
@@ -14,8 +15,8 @@ export default function VisitorGateEntry() {
     try {
       const res = await fetch(`${API_BASE_URL}/visitors/current.php`);
       const data = await res.json();
-      if (data.success) {
-        setCurrentVisitors(data.visitors); // Data format changed to data.visitors matching API
+      if (data && data.success) {
+        setCurrentVisitors(data.visitors || []); // Data format changed to data.visitors matching API
       }
     } catch (err) {
       console.error('Failed to fetch visitors', err);
@@ -30,7 +31,7 @@ export default function VisitorGateEntry() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleEntry = async (e) => {
+  const handleEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res = await fetch(`${API_BASE_URL}/visitors/entry.php`, {
@@ -39,11 +40,11 @@ export default function VisitorGateEntry() {
         body: JSON.stringify(formData)
       });
       const data = await res.json();
-      if (data.success) {
+      if (data && data.success) {
         setFormData({ name: '', phone: '', purpose: '', shop_id: '' });
         fetchCurrentVisitors(); // Instantly refresh list
       } else {
-        alert("Error: " + data.message);
+        alert("Error: " + (data?.message || 'Unknown error'));
       }
     } catch (err) {
       console.error(err);
@@ -51,7 +52,7 @@ export default function VisitorGateEntry() {
     }
   };
 
-  const handleExit = async (id) => {
+  const handleExit = async (id: number | string) => {
     try {
       await fetch(`${API_BASE_URL}/visitors/exit.php`, {
         method: 'POST',
@@ -114,13 +115,13 @@ export default function VisitorGateEntry() {
                 </tr>
               </thead>
               <tbody>
-                {currentVisitors.map(visitor => (
+                {(Array.isArray(currentVisitors) ? currentVisitors : []).map(visitor => (
                   <tr key={visitor.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3 font-medium text-gray-900">{visitor.name}</td>
-                    <td className="p-3 text-gray-600">{visitor.phone}</td>
-                    <td className="p-3 font-semibold text-blue-800">Shop ID: {visitor.shop_id} <span className="font-normal text-gray-600">({visitor.purpose})</span></td>
+                    <td className="p-3 font-medium text-gray-900">{visitor?.name}</td>
+                    <td className="p-3 text-gray-600">{visitor?.phone}</td>
+                    <td className="p-3 font-semibold text-blue-800">Shop ID: {visitor?.shop_id} <span className="font-normal text-gray-600">({visitor?.purpose})</span></td>
                     <td className="p-3 text-gray-600">
-                      {new Date(visitor.entry_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}
+                      {visitor?.entry_time ? new Date(visitor.entry_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}) : ''}
                     </td>
                     <td className="p-3 text-center">
                       <button onClick={() => handleExit(visitor.id)} className="text-orange-600 hover:text-orange-800 flex items-center justify-center gap-1 mx-auto text-sm font-medium border border-orange-200 bg-orange-50 hover:bg-orange-100 px-3 py-1 rounded transition-colors">
@@ -129,7 +130,7 @@ export default function VisitorGateEntry() {
                     </td>
                   </tr>
                 ))}
-                {currentVisitors.length === 0 && !loading && (
+                {(!currentVisitors || currentVisitors.length === 0) && !loading && (
                    <tr>
                     <td colSpan={5} className="p-6 text-center text-gray-500 font-medium">No visitors are currently inside the plaza.</td>
                    </tr>

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config';
 import { useState, useEffect } from 'react';
 
 interface TenantNotification {
@@ -24,7 +25,7 @@ export const useTenantNotifications = (tenantId: string) => {
         setLoading(true);
         setError('');
         
-        const response = await fetch(`http://localhost/plaza_management_system_backend/get_tenant_notifications.php?tenant_id=${tenantId}`, {
+        const response = await fetch(`${API_BASE_URL}/get_tenant_notifications.php?tenant_id=${tenantId}`, {
           method: 'GET',
           credentials: 'include'
         });
@@ -53,7 +54,7 @@ export const useTenantNotifications = (tenantId: string) => {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const response = await fetch('http://localhost/plaza_management_system_backend/mark_notification_read.php', {
+      const response = await fetch(API_BASE_URL + '/mark_notification_read.php', {
         method: 'POST',
         credentials: 'include',
         headers: {

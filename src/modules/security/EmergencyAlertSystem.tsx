@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, AlertOctagon, Zap, ShieldAlert, Wrench, Siren, X } from 'lucide-react';
 import { getUser } from '../../utils/auth';
+import { API_BASE_URL as BASE_URL } from '../../config';
 
-const API_BASE_URL = 'http://localhost/plaza_management_system_backend/api/security';
+const API_BASE_URL = BASE_URL + '/api/security';
 
 export default function EmergencyAlertSystem() {
-  const [alerts, setAlerts] = useState([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
   const [dismissed, setDismissed] = useState<Set<number>>(() => {
     try {
       const stored = localStorage.getItem('dismissed_alert_ids');
@@ -24,8 +25,8 @@ export default function EmergencyAlertSystem() {
       const res = await fetch(`${API_BASE_URL}/alerts/latest.php?role=${role}`);
       const data = await res.json();
       
-      if (data.success && data.data) {
-        setAlerts(data.data);
+      if (data && data.success && data.data) {
+        setAlerts(data.data || []);
 
         if (data.data.length > previousAlertsCount.current) {
           playAlarmSound();
@@ -79,7 +80,7 @@ export default function EmergencyAlertSystem() {
     return () => clearInterval(interval);
   }, []);
 
-  const visibleAlerts = alerts.filter((a: any) => !dismissed.has(a.id));
+  const visibleAlerts = (Array.isArray(alerts) ? alerts : []).filter((a: any) => !dismissed.has(a.id));
 
   if (!visibleAlerts || visibleAlerts.length === 0) return null;
 
@@ -96,7 +97,7 @@ export default function EmergencyAlertSystem() {
   return (
     /* Fixed overlay — sits on top of page, does NOT push content down */
     <div className="fixed top-0 left-0 right-0 z-[9999] flex flex-col pointer-events-none">
-      {visibleAlerts.map((alert: any) => (
+      {(Array.isArray(visibleAlerts) ? visibleAlerts : []).map((alert: any) => (
         <div
           key={alert.id}
           className="w-full bg-red-600 text-white shadow-2xl border-b-2 border-red-800 pointer-events-auto"

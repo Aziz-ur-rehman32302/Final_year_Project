@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState } from 'react'
 
 import AdminSidebar from './AdminSidebar'
@@ -52,7 +53,7 @@ const TenantRegistration = () => {
     setErrorMessage('');
     
     try {
-      const response = await fetch('http://localhost/plaza_management_system_backend/add_tenant.php', {
+      const response = await fetch(API_BASE_URL + '/add_tenant.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +71,8 @@ const TenantRegistration = () => {
       let result;
       try {
         result = JSON.parse(responseText);
-      } catch (parseError) {
+      } catch (err) {
+        console.error('Failed to parse:', err);
         throw new Error('Invalid response from server');
       }
 
@@ -404,7 +406,13 @@ const TenantRegistration = () => {
             </button>
             <button
               type="button"
-              onClick={() => onNavigate('admin-dashboard')}
+              onClick={() => {
+                try {
+                  onNavigate('admin-dashboard');
+                } catch(e) {
+                  window.location.reload();
+                }
+              }}
               className="bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg hover:bg-gray-300 transition-colors"
             >
               Cancel

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import {
   LineChart,
@@ -47,7 +48,7 @@ export default function RentTrends() {
           headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const response = await fetch('http://localhost/plaza_management_system_backend/rent_collection_trends.php', {
+        const response = await fetch(API_BASE_URL + '/rent_collection_trends.php', {
           method: 'GET',
           headers: headers,
         });
@@ -65,7 +66,8 @@ export default function RentTrends() {
         let result;
         try {
           result = JSON.parse(responseText);
-        } catch (parseError) {
+        } catch (err) {
+          console.error("Parse Error:", err);
           throw new Error('Invalid response format');
         }
 

@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, UserPlus, CheckCircle, Clock, MapPin, Loader2, AlertCircle, Users, Activity, Coffee, Trash2 } from 'lucide-react';
 import StatCard from '../../Components/StatCard';
+import { API_BASE_URL as BASE_URL } from '../../config';
 
-const API_BASE_URL = 'http://localhost/plaza_management_system_backend/api/security';
+const API_BASE_URL = BASE_URL + '/api/security';
 
 export default function GuardsManagement() {
-  const [guards, setGuards] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [guards, setGuards] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeAttendanceId, setActiveAttendanceId] = useState(null);
+  const [activeAttendanceId, setActiveAttendanceId] = useState<number | string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isDeletingId, setIsDeletingId] = useState<number | string | null>(null);
   
   // Stats State
   const [stats, setStats] = useState({ total: 0, on_duty: 0, off_duty: 0, inactive: 0 });
@@ -29,15 +32,21 @@ export default function GuardsManagement() {
   const [errorText, setErrorText] = useState('');
   const [successText, setSuccessText] = useState('');
 
+  const filteredGuards = (Array.isArray(guards) ? guards : []).filter(g => 
+    g?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    g?.duty_location?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const fetchGuards = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/guards/list.php?t=${new Date().getTime()}`);
       const data = await res.json();
-      if (data.success && data.data) {
-        setGuards(data.data);
-      } else if (Array.isArray(data)) {
-        // Fallback in case raw array is sent
+      if (data && Array.isArray(data)) {
         setGuards(data);
+      } else if (data && data.data && Array.isArray(data.data)) {
+        setGuards(data.data);
+      } else {
+        setGuards([]);
       }
     } catch (err) {
       console.error('Failed to fetch guards list', err);
@@ -78,7 +87,7 @@ export default function GuardsManagement() {
     };
   }, []);
 
-  const handleAddGuard = async (e) => {
+  const handleAddGuard = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorText('');
@@ -115,7 +124,7 @@ export default function GuardsManagement() {
     }
   };
 
-  const handleAttendance = async (guardId, isCheckingIn) => {
+  const handleAttendance = async (guardId: number | string, isCheckingIn: boolean) => {
     setActiveAttendanceId(guardId);
     setSuccessText('');
     
@@ -143,8 +152,9 @@ export default function GuardsManagement() {
     }
   };
 
-  const handleDeleteGuard = async (guardId) => {
+  const handleDeleteGuard = async (guardId: number | string) => {
     if(!window.confirm("Are you sure you want to delete this guard? All attendance and shift records will be permanently erased.")) return;
+    setIsDeletingId(guardId);
     try {
       const res = await fetch(`${API_BASE_URL}/guards/delete.php`, {
         method: 'POST',
@@ -161,6 +171,8 @@ export default function GuardsManagement() {
       }
     } catch(err) {
       console.error(err);
+    } finally {
+      setIsDeletingId(null);
     }
   };
 
@@ -268,6 +280,12 @@ export default function GuardsManagement() {
              <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 border-l-4 border-gray-800 pl-3">
                Live Duty Board
              </h2>
+             <input 
+               type="text" 
+               placeholder="Search guards..." 
+               className="px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+               onChange={(e) => setSearchTerm(e.target.value)}
+             />
           </div>
           
           <div className="overflow-x-auto">
@@ -282,25 +300,25 @@ export default function GuardsManagement() {
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                   {guards.map(guard => {
-                      const calcStatus = guard.duty_status;
+                   {(Array.isArray(filteredGuards) ? filteredGuards : []).map(guard => {
+                      const calcStatus = guard?.duty_status;
                       
                       return (
                       <tr key={guard.id} className="hover:bg-gray-50 transition-colors border-b border-gray-100">
                          <td className="p-3 pl-4">
-                            <h3 className="font-medium text-gray-900 text-sm">{guard.name}</h3>
-                            <p className="text-xs text-gray-500">{guard.cnic}</p>
+                            <h3 className="font-medium text-gray-900 text-sm">{guard?.name}</h3>
+                            <p className="text-xs text-gray-500">{guard?.cnic}</p>
                          </td>
                          
                          <td className="p-3 text-gray-500 text-sm">
-                            {guard.phone}
+                            {guard?.phone}
                          </td>
                          
                          <td className="p-3 align-middle">
                             <div className="flex flex-col gap-0.5">
-                               <p className="text-sm font-medium text-gray-800 flex items-center gap-1.5">{guard.duty_location || 'No Shift Assigned'}</p>
+                               <p className="text-sm font-medium text-gray-800 flex items-center gap-1.5">{guard?.duty_location || 'No Shift Assigned'}</p>
                                <span className="text-xs text-gray-500 flex items-center gap-1.5">
-                                 {guard.shift_start && guard.shift_end ? `${new Date(guard.shift_start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} → ${new Date(guard.shift_end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : 'No Shift Assigned'}
+                                 {guard?.shift_start && guard?.shift_end ? `${new Date(guard.shift_start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} → ${new Date(guard.shift_end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : 'No Shift Assigned'}
                                </span>
                             </div>
                          </td>
@@ -324,30 +342,38 @@ export default function GuardsManagement() {
                          <td className="p-3 align-middle pr-4">
                             <div className="flex justify-center items-center gap-2">
                                <button 
-                                 onClick={() => handleAttendance(guard.id, calcStatus !== 'on_duty')}
-                                 disabled={activeAttendanceId === guard.id || calcStatus === 'inactive'}
+                                 onClick={() => handleAttendance(guard?.id, calcStatus !== 'on_duty')}
+                                 disabled={activeAttendanceId === guard?.id || calcStatus === 'inactive'}
                                  className={`w-28 py-2 rounded shadow-sm text-sm font-black tracking-wide transition-all border flex justify-center items-center gap-2
-                                   ${activeAttendanceId === guard.id ? 'opacity-70 cursor-not-allowed bg-gray-100 text-gray-500 border-gray-300' 
+                                   ${activeAttendanceId === guard?.id ? 'opacity-70 cursor-not-allowed bg-gray-100 text-gray-500 border-gray-300' 
                                    : calcStatus === 'inactive' ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200'
                                    : calcStatus === 'on_duty' ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100' 
-                                   : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'}`}
+                                   : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'}`}
                                >
-                                 {activeAttendanceId === guard.id ? <Loader2 className="w-4 h-4 animate-spin"/> 
-                                 : calcStatus === 'on_duty' ? 'Check-Out' : 'Check-In'}
+                                 {activeAttendanceId === guard?.id ? (
+                                    <span className="animate-pulse">Wait...</span>
+                                 ) : calcStatus === 'inactive' ? (
+                                    'LOCKED'
+                                 ) : calcStatus === 'on_duty' ? (
+                                    <span>Check Out</span>
+                                 ) : (
+                                    <span>Check In</span>
+                                 )}
                                </button>
                                <button 
-                                 onClick={() => handleDeleteGuard(guard.id)}
-                                 className="text-red-500 hover:text-red-700 bg-red-50 p-2 rounded border border-red-100 hover:border-red-300 transition-colors shadow-sm"
-                                 title="Delete Guard"
+                                 onClick={() => handleDeleteGuard(guard?.id)}
+                                 disabled={isDeletingId === guard?.id}
+                                 className="text-red-500 hover:text-red-700 bg-red-50 border border-red-200 p-2 rounded-md hover:bg-red-100 transition-colors focus:ring-2 focus:ring-red-400 focus:outline-none"
+                                 title="Delete Guard Record"
                                >
-                                 <Trash2 className="w-4 h-4"/>
+                                 {isDeletingId === guard?.id ? <div className="w-5 h-5 rounded-full border-t-2 border-b-2 border-red-600 animate-spin"></div> : <Trash2 className="w-5 h-5"/>}
                                </button>
                             </div>
                          </td>
                       </tr>
                    )})}
                    
-                   {stats.total === 0 && !loading && (
+                   {!loading && (!guards || guards.length === 0) && (
                       <tr>
                         <td colSpan={5} className="p-8 text-center text-gray-500 font-semibold bg-gray-50/30">
                           No personnel registered in the security roster yet.

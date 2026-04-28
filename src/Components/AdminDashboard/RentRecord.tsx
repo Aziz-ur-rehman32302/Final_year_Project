@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import { FileText, Search, Filter, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -33,7 +34,7 @@ const initialRentRecords: TenantRent[] = [];
        setIsLoadingRecords(true);
        setRecordsError('');
        
-       const response = await fetch('http://localhost/plaza_management_system_backend/rent_records.php', {
+       const response = await fetch(API_BASE_URL + '/rent_records.php', {
          credentials: 'include'
        });
        
@@ -193,7 +194,7 @@ const initialRentRecords: TenantRent[] = [];
         setIsLoading(true);
         setError('');
         
-        const response = await fetch('http://localhost/plaza_management_system_backend/rent_summary.php', {
+        const response = await fetch(API_BASE_URL + '/rent_summary.php', {
           credentials: 'include'
         });
         

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import {
   Bell,
   CheckCircle,
@@ -50,7 +51,7 @@ const NotificationsAdmin = () => {
         setLoading(true);
         setError('');
         
-        const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_logs.php', {
+        const response = await fetch(API_BASE_URL + '/get_notification_logs.php', {
           method: 'GET',
           credentials: 'include'
         });
@@ -99,7 +100,7 @@ const NotificationsAdmin = () => {
     
     const fetchNotificationSettings = async () => {
       try {
-        const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_rules.php', {
+        const response = await fetch(API_BASE_URL + '/get_notification_rules.php', {
           method: 'GET',
           credentials: 'include'
         });
@@ -152,7 +153,7 @@ const NotificationsAdmin = () => {
         channel_push: enablePush ? 1 : 0
       };
       
-      const response = await fetch('http://localhost/plaza_management_system_backend/save_notification_rules.php', {
+      const response = await fetch(API_BASE_URL + '/save_notification_rules.php', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -238,7 +239,7 @@ const NotificationsAdmin = () => {
           setNotificationsLoading(true);
           setNotificationsError('');
           
-          const response = await fetch('http://localhost/plaza_management_system_backend/get_notification_logs.php', {
+          const response = await fetch(API_BASE_URL + '/get_notification_logs.php', {
             method: 'GET',
             credentials: 'include'
           });

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Bell,
@@ -85,7 +86,7 @@ const TenantNotification: React.FC = () => {
       setError('');
       
       const response = await fetch(
-        `http://localhost/plaza_management_system_backend/get_tenant_notifications.php?tenant_id=${loggedInTenantId}`,
+        `${API_BASE_URL}/get_tenant_notifications.php?tenant_id=${loggedInTenantId}`,
         {
           method: 'GET',
           credentials: 'include', // CRITICAL: Include cookies/session
@@ -148,7 +149,7 @@ const TenantNotification: React.FC = () => {
     try {
       setMarkingRead(notificationId);
       
-      const response = await fetch('http://localhost/plaza_management_system_backend/mark_notification_read.php', {
+      const response = await fetch(API_BASE_URL + '/mark_notification_read.php', {
         method: 'POST',
         credentials: 'include', // CRITICAL: Include cookies/session
         headers: {
@@ -204,7 +205,7 @@ const TenantNotification: React.FC = () => {
   // Fetch Preferences
   const fetchPreferences = async () => {
     try {
-      const response = await fetch(`http://localhost/plaza_management_system_backend/get_tenant_notification_preferences.php?tenant_id=${loggedInTenantId}`);
+      const response = await fetch(`${API_BASE_URL}/get_tenant_notification_preferences.php?tenant_id=${loggedInTenantId}`);
       if (response.ok) {
         const data = await response.json();
         if (data.status === 'success' && data.data?.preferences) {
@@ -221,7 +222,7 @@ const TenantNotification: React.FC = () => {
     setIsUpdatingPreferences(true);
     setPreferenceSuccess(false);
     try {
-      const response = await fetch('http://localhost/plaza_management_system_backend/update_tenant_notification_preferences.php', {
+      const response = await fetch(API_BASE_URL + '/update_tenant_notification_preferences.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -273,7 +274,7 @@ const TenantNotification: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       if (activeNotificationId) {
-        const resolveResponse = await fetch('http://localhost/plaza_management_system_backend/resolve_notification.php', {
+        const resolveResponse = await fetch(API_BASE_URL + '/resolve_notification.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ notification_id: activeNotificationId })

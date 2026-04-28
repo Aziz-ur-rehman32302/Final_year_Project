@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import { 
   LogOut, 
   Menu, 
@@ -21,7 +22,7 @@ const AdminNavbar = ({toggleNavButton,isVisible}) => {
         const token = getToken();
         if (!token) return;
 
-        const response = await fetch('http://localhost/plaza_management_system_backend/unread_issues_count.php', {
+        const response = await fetch(API_BASE_URL + '/unread_issues_count.php', {
           method: 'GET',
           credentials: 'include',
           headers: {

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import {
   DollarSign,
   AlertCircle,
@@ -37,7 +38,7 @@ const DashBoard = () => {
           return;
         }
 
-        const response = await fetch('http://localhost/plaza_management_system_backend/payment_status.php', {
+        const response = await fetch(API_BASE_URL + '/payment_status.php', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -121,7 +122,7 @@ const DashBoard = () => {
           return;
         }
 
-        const response = await fetch('http://localhost/plaza_management_system_backend/tenant_financial_summary.php', {
+        const response = await fetch(API_BASE_URL + '/tenant_financial_summary.php', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -173,7 +174,7 @@ const DashBoard = () => {
           return;
         }
 
-        const response = await fetch('http://localhost/plaza_management_system_backend/fetch_rent_history.php', {
+        const response = await fetch(API_BASE_URL + '/fetch_rent_history.php', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -249,11 +250,11 @@ const DashBoard = () => {
         payment_amount: tenantData?.rent_amount || tenantData?.tenant_info?.rent_amount
       };
       
-      console.log('Sending payment request to:', 'http://localhost/plaza_management_system_backend/process_payment.php');
+      console.log('Sending payment request to:', API_BASE_URL + '/process_payment.php');
       console.log('Payment data:', paymentData);
       console.log('Authorization token:', token ? 'Present' : 'Missing');
       
-      const response = await fetch('http://localhost/plaza_management_system_backend/process_payment.php', {
+      const response = await fetch(API_BASE_URL + '/process_payment.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -346,7 +347,7 @@ const DashBoard = () => {
       const token = getToken();
       const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
       
-      const response = await fetch('http://localhost/plaza_management_system_backend/update_payment_status.php', {
+      const response = await fetch(API_BASE_URL + '/update_payment_status.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -402,7 +403,7 @@ const DashBoard = () => {
       
       console.log('Submitting issue:', issueData);
       
-      const response = await fetch('http://localhost/plaza_management_system_backend/report_issue.php', {
+      const response = await fetch(API_BASE_URL + '/report_issue.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -828,7 +829,7 @@ const DashBoard = () => {
           <span className="w-5 h-5">
             <MessageSquare />
           </span>
-          My Issues
+          My  Issues
         </h1>
         
         <TenantIssues refreshTrigger={issuesRefreshTrigger} />

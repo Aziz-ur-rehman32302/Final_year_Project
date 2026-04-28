@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { Bell, AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { getUser } from '../../utils/auth';
@@ -40,7 +41,7 @@ const TenantNotifications: React.FC = () => {
         const loggedInTenantId = currentUser?.id?.toString() || currentUser?.user_id?.toString() || currentUser?.tenant_id?.toString() || currentUser?.shop_number?.toString() || 'T-001';
 
         // Fetch notifications for the logged-in tenant
-        const response = await fetch(`http://localhost/plaza_management_system_backend/get_tenant_notifications.php?tenant_id=${loggedInTenantId}`, {
+        const response = await fetch(`${API_BASE_URL}/get_tenant_notifications.php?tenant_id=${loggedInTenantId}`, {
           method: 'GET',
           credentials: 'include', // Include session cookies for authentication
           headers: {
@@ -139,7 +140,7 @@ const TenantNotifications: React.FC = () => {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const response = await fetch('http://localhost/plaza_management_system_backend/mark_notification_read.php', {
+      const response = await fetch(API_BASE_URL + '/mark_notification_read.php', {
         method: 'POST',
         credentials: 'include',
         headers: {

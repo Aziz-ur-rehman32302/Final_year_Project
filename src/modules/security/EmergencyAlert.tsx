@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Radio } from 'lucide-react';
+import { API_BASE_URL as BASE_URL } from '../../config';
 
-const API_BASE_URL = 'http://localhost/plaza_management_system_backend/api/security';
+const API_BASE_URL = BASE_URL + '/api/security';
 
 export default function EmergencyAlert() {
   const [formData, setFormData] = useState({ title: '', message: '', alert_type: 'general', target_audience: 'all_tenants' });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleSendAlert = async (e) => {
+  const handleSendAlert = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setSuccess(false);
@@ -19,12 +20,12 @@ export default function EmergencyAlert() {
         body: JSON.stringify(formData)
       });
       const data = await res.json();
-      if (data.success) {
+      if (data && data.success) {
         setSuccess(true);
         setFormData({ title: '', message: '', alert_type: 'general', target_audience: 'all_tenants' });
         setTimeout(() => setSuccess(false), 5000);
       } else {
-        alert("Error: " + data.message);
+        alert("Error: " + (data?.message || 'Unknown error'));
       }
     } catch (err) {
       console.error(err);

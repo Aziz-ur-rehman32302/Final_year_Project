@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { 
   Bell, 
@@ -71,7 +72,7 @@ const TenantNotificationsPanel: React.FC = () => {
         
         console.log('Fetching notifications for tenant:', loggedInTenantId);
 
-        const response = await fetch('http://localhost/plaza_management_system_backend/get_tenant_notifications.php', {
+        const response = await fetch(API_BASE_URL + '/get_tenant_notifications.php', {
           method: 'POST',
           credentials: 'include',
           headers: {
@@ -185,7 +186,7 @@ const TenantNotificationsPanel: React.FC = () => {
       console.log('Marking notification as read:', notificationId, 'for tenant:', loggedInTenantId);
 
       try {
-        const response = await fetch('http://localhost/plaza_management_system_backend/mark_notification_read.php', {
+        const response = await fetch(API_BASE_URL + '/mark_notification_read.php', {
           method: 'POST',
           credentials: 'include',
           headers: {

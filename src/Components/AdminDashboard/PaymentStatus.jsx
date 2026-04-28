@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell } from "recharts";
 
@@ -14,7 +15,7 @@ export function PaymentStatus() {
     setLoading(true);
     setError(null);
     
-    fetch("http://localhost/plaza_management_system_backend/payment_status_overview.php")
+    fetch(API_BASE_URL + '/payment_status_overview.php')
       .then(res => {
         if (!res.ok) {
           throw new Error("Server error");
@@ -46,6 +47,7 @@ export function PaymentStatus() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPaymentData();
   }, []);
 

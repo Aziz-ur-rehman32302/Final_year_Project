@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config';
 import React, { useState, useEffect } from 'react'
 import { 
   LayoutDashboard, 
@@ -61,7 +62,7 @@ const TenantIssues = () => {
         return;
       }
 
-      const response = await fetch('http://localhost/plaza_management_system_backend/fetch_all_issues.php', {
+      const response = await fetch(API_BASE_URL + '/fetch_all_issues.php', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -82,7 +83,8 @@ const TenantIssues = () => {
       let result;
       try {
         result = JSON.parse(responseText);
-      } catch (parseError) {
+      } catch (err) {
+        console.error("Parse Error:", err);
         throw new Error('Invalid response format');
       }
 
@@ -126,7 +128,7 @@ const TenantIssues = () => {
         return;
       }
       
-      const response = await fetch('http://localhost/plaza_management_system_backend/respond_tenant_issue.php', {
+      const response = await fetch(API_BASE_URL + '/respond_tenant_issue.php', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -162,7 +164,8 @@ const TenantIssues = () => {
       let result;
       try {
         result = JSON.parse(responseText);
-      } catch (parseError) {
+      } catch (err) {
+        console.error("Parse Error:", err);
         throw new Error('Invalid JSON response from server');
       }
       
@@ -241,7 +244,7 @@ const TenantIssues = () => {
       }
 
       console.log('📡 Sending resolve request to API...');
-      const response = await fetch('http://localhost/plaza_management_system_backend/resolve_issue.php', {
+      const response = await fetch(API_BASE_URL + '/resolve_issue.php', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -389,7 +392,7 @@ const TenantIssues = () => {
   
   // Fetch recent activities
   useEffect(() => {
-    fetch("http://localhost/plaza_management_system_backend/recent_activity.php", {
+    fetch(API_BASE_URL + '/recent_activity.php', {
       credentials: 'include'
     })
       .then(res => res.json())
@@ -412,7 +415,7 @@ const TenantIssues = () => {
         const token = getToken();
         if (!token) return;
 
-        const response = await fetch('http://localhost/plaza_management_system_backend/unread_issues_count.php', {
+        const response = await fetch(API_BASE_URL + '/unread_issues_count.php', {
           method: 'GET',
           credentials: 'include',
           headers: {
