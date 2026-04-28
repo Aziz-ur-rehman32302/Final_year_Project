@@ -112,7 +112,7 @@ export default function IncidentReporting() {
         </h1>
       </div>
 
-      <div className="flex flex-col gap-6 w-full max-w-4xl">
+      <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 w-full">
           <h2 className="text-lg font-semibold mb-4 text-orange-700">Report New Incident</h2>
           <form onSubmit={handleReport} className="space-y-4">

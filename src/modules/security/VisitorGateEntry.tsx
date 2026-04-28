@@ -75,9 +75,9 @@ export default function VisitorGateEntry() {
          </h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Entry Form */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-1">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold mb-4">New Visitor Entry</h2>
           <form onSubmit={handleEntry} className="space-y-4">
             <div>
@@ -101,7 +101,7 @@ export default function VisitorGateEntry() {
         </div>
 
         {/* Current Visitors */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold mb-4">Visitors Currently Inside Plaza</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
