@@ -14,7 +14,7 @@ import TenantIssues from "./TenantIssues";
 
 const DashBoard = () => {
   // API Data State 
-  const [tenantData, setTenantData] = useState(null);
+  const [tenantData, setTenantData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -200,9 +200,9 @@ const DashBoard = () => {
 
         if (result.status === 'success') {
           // Sort records with latest month first
-          const sortedHistory = (result.data || []).sort((a, b) => {
-            const dateA = new Date(a.month);
-            const dateB = new Date(b.month);
+          const sortedHistory = (result.data || []).sort((a: any, b: any) => {
+            const dateA = new Date(a.month).getTime();
+            const dateB = new Date(b.month).getTime();
             return dateB - dateA; // Latest first
           });
           
@@ -294,7 +294,7 @@ const DashBoard = () => {
         await updatePaymentStatus(tenantData?.tenant_info?.id || currentUser?.id || currentUser?.user_id || currentUser?.tenant_id);
         
         // Update local state immediately for real-time UI update
-        setTenantData(prev => ({
+        setTenantData((prev: any) => ({
           ...prev,
           payment_status: 'Paid'
         }));
@@ -319,19 +319,20 @@ const DashBoard = () => {
         setPaymentError(errorMessage);
         console.error('Payment failed:', errorMessage);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Payment processing error:', err);
       
       // Handle different types of errors with user-friendly messages
-      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      const error = err as any;
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
         setPaymentError('Network Error: Unable to connect to payment server. Please check your internet connection.');
-      } else if (err.message.includes('HTTP 404')) {
+      } else if (error.message.includes('HTTP 404')) {
         setPaymentError('API Error: Payment endpoint not found. Please contact support.');
-      } else if (err.message.includes('HTTP 500')) {
+      } else if (error.message.includes('HTTP 500')) {
         setPaymentError('Server Error: Payment service is temporarily unavailable. Please try again later.');
-      } else if (err.message.includes('Empty response')) {
+      } else if (error.message.includes('Empty response')) {
         setPaymentError('Server Error: No response from payment service. Please verify the API is running.');
-      } else if (err.message.includes('invalid JSON')) {
+      } else if (error.message.includes('invalid JSON')) {
         setPaymentError('Server Error: Invalid response format. Please contact technical support.');
       } else {
         setPaymentError('Unexpected Error: Something went wrong. Please try again or contact support.');
@@ -342,7 +343,7 @@ const DashBoard = () => {
   };
   
   // Update payment status in backend
-  const updatePaymentStatus = async (tenantId) => {
+  const updatePaymentStatus = async (tenantId: any) => {
     try {
       const token = getToken();
       const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -368,7 +369,7 @@ const DashBoard = () => {
   };
   
   // Report Issue function
-  const reportIssue = async (e) => {
+  const reportIssue = async (e: any) => {
     e.preventDefault();
     
     // Validate issue description
@@ -451,19 +452,20 @@ const DashBoard = () => {
         setIssueError(errorMessage);
         console.error('Issue submission failed:', errorMessage);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Issue submission error:', err);
       
       // Handle different types of errors
-      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+      const error = err as any;
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
         setIssueError('Network Error: Unable to connect to server. Please check your internet connection.');
-      } else if (err.message.includes('HTTP 404')) {
+      } else if (error.message.includes('HTTP 404')) {
         setIssueError('Service Error: Issue reporting service not found. Please contact support.');
-      } else if (err.message.includes('HTTP 500')) {
+      } else if (error.message.includes('HTTP 500')) {
         setIssueError('Server Error: Issue reporting service is temporarily unavailable. Please try again later.');
-      } else if (err.message.includes('Empty response')) {
+      } else if (error.message.includes('Empty response')) {
         setIssueError('Server Error: No response from issue reporting service.');
-      } else if (err.message.includes('Invalid response')) {
+      } else if (error.message.includes('Invalid response')) {
         setIssueError('Server Error: Invalid response format. Please contact technical support.');
       } else {
         setIssueError('Unexpected Error: Something went wrong. Please try again or contact support.');
@@ -501,12 +503,12 @@ const DashBoard = () => {
   const [issuesRefreshTrigger, setIssuesRefreshTrigger] = useState(0);
   
   // Financial summary states
-  const [financialData, setFinancialData] = useState(null);
+  const [financialData, setFinancialData] = useState<any>(null);
   const [loadingFinancial, setLoadingFinancial] = useState(true);
   const [financialError, setFinancialError] = useState('');
   
   // Rent history states
-  const [rentHistory, setRentHistory] = useState([]);
+  const [rentHistory, setRentHistory] = useState<any[]>([]);
   const [loadingRentHistory, setLoadingRentHistory] = useState(true);
   const [rentHistoryError, setRentHistoryError] = useState('');
   
@@ -780,7 +782,7 @@ const DashBoard = () => {
             {/* Error Message */}
             {issueError && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg mt-2 text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{issueError}</span>
                 <button 
                   type="button"
@@ -914,7 +916,7 @@ const DashBoard = () => {
                       return financialData.total_paid.toLocaleString();
                     }
                     const history = tenantData?.payment_history || [];
-                    const totalFromHistory = history.reduce((sum, record) => {
+                    const totalFromHistory = history.reduce((sum: number, record: any) => {
                       const amount = Number(record.amount || record.paid_amount || 0);
                       return sum + (isNaN(amount) ? 0 : amount);
                     }, 0);

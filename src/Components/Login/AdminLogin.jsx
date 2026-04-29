@@ -15,7 +15,7 @@ const AdminLogin = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const togglePassword =()=>{
+    const togglePassword = () => {
         setshowPassword(!showpassword)
     }
 
@@ -68,104 +68,103 @@ const AdminLogin = () => {
     }, [navigate]);
 
     // Navigate to Tenant Login page on button click
-    const handleLoginAsTenant = () =>{
+    const handleLoginAsTenant = () => {
         navigate('/tenant-login')  // Redirect to Tenant Login page
-    
+
     }
 
 
     return (
-        
-        
-        <div className='min-h-screen w-full flex items-center justify-center bg-white text-black'>
-      
-        <div className="w-full max-w-md py-2">
-         {/* Logo/Header */}
-         <div className='text-center '>
-          
-          <div className=' flex items-center flex-col'>
-            <img src={Logo} alt="Plaza Management System"  className="w-40 h-25 mb-2 text-white"/>
-          </div>
-          {/* Login Card Start */}
-          <div className="bg-white rounded-lg shadow-2xl  py-4 px-8">
-            <h2 className="text-gray-900 mb-6 font-semibold text-center">Admin Login</h2>
 
-            <form  onSubmit={handleLogin}>
 
-                <div>
-                    <label htmlFor="username" className="block text-start text-gray-700 pl-1 mb-2">Username</label>
-                    <div className="relative">
-                        {/* <User/> */}
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input 
-                        onChange={ (e)=>{
-                            
-                            setuserName(e.target.value)
-                            
-                        } }
-                        value={username}
-                        id="username"
-                        type="text"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                        placeholder="Enter your username"
-                        required
-                        />
-                    </div>
-                </div>
+        <div className='min-h-screen w-full flex items-center justify-center bg-gray-900 text-black'>
 
-                <div>
-                    <label htmlFor="password" className="block text-gray-700 mb-2 pl-1 text-start"> Password</label>
-                    <div className="relative">
-                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                        onChange={(e)=>{
-                            setuserPassword(e.target.value)}}
-                        value={userpassword}
-                        id="password"
-                         type={showpassword ?'text':'password'} // Toggle between 'text' and 'password'
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all input"
-                        placeholder="Enter your password"
-                        required
-                        />
-                        
-                    </div>
+            <div className="w-full max-w-md py-2">
+                {/* Logo/Header */}
+                <div className='text-center '>
 
-                        <div className='flex justify-items-start gap-1  items-center mt-1 pl-1'>
-                            {/* // Toggle password visibility */}
-                            <input  type="checkbox"  onClick={togglePassword} className='w-4 h-4 border-none rounded-md bg-blue-500 cursor-pointer' /><span className='text-sm text-blue-500'>Show Password</span>
+                    {/* <div className=' flex items-center flex-col'>
+                        <img src={Logo} alt="Plaza Management System" className="w-40 h-25 mb-6 text-white" />
+                    </div> */}
+                    {/* Login Card Start */}
+                    <div className="bg-white rounded-3xl shadow-2xl py-8 px-8 border-4 border-orange-400">
+                        <h2 className="text-gray-900 mb-8 font-bold text-center text-2xl">Admin Login</h2>
 
+                        <form onSubmit={handleLogin}>
+
+                            <div className="mb-6">
+                                <label htmlFor="username" className="block text-start text-gray-700 pl-1 mb-3 font-semibold text-lg">Username</label>
+                                <div className="relative">
+                                    {/* <User/> */}
+                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        onChange={(e) => {
+
+                                            setuserName(e.target.value)
+
+                                        }}
+                                        value={username}
+                                        id="username"
+                                        type="text"
+                                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-base"
+                                        placeholder="Enter your username"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <label htmlFor="password" className="block text-gray-700 mb-3 pl-1 text-start font-semibold text-lg"> Password</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        onChange={(e) => {
+                                            setuserPassword(e.target.value)
+                                        }}
+                                        value={userpassword}
+                                        id="password"
+                                        type={showpassword ? 'text' : 'password'} // Toggle between 'text' and 'password'
+                                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all input text-base"
+                                        placeholder="Enter your password"
+                                        required
+                                    />
+
+                                </div>
+
+                                <div className='flex justify-items-start gap-2 items-center mt-3 pl-1'>
+                                    {/* // Toggle password visibility */}
+                                    <input type="checkbox" onClick={togglePassword} className='w-4 h-4 border-none rounded-md bg-blue-500 cursor-pointer' /><span className='text-sm text-gray-700 font-medium'>Show Password</span>
+
+                                </div>
+
+                            </div>
+                            {error && <p className="text-red-600 text-sm mb-4 font-semibold">{error}</p>}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className={`w-full mt-6 bg-blue-600 active:scale-95 text-white py-3 rounded-xl hover:bg-blue-700 transition-colors cursor-pointer font-semibold text-lg ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {loading ? 'Logging in...' : 'Login'}
+                            </button>
+
+                        </form>
+
+                        <div className="mt-6 text-center">
+                            {/* Button to navigate to Tenant Login page */}
+                            <button onClick={() => { handleLoginAsTenant() }}
+                                className="w-full border-2 border-orange-500 text-orange-500 active:scale-95 cursor-pointer hover:bg-orange-50 transition-colors py-2.5 rounded-xl font-semibold text-base"
+                            >Login as Tenant</button>
                         </div>
 
-                </div>
-                {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className={`w-full mt-4 bg-blue-600 active:scale-95 text-white py-2.5 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                    {loading ? 'Logging in...' : 'Login'}
-               </button>
-                
-            </form>
-            
-            <div className="mt-6 text-center">
-                 {/* Button to navigate to Tenant Login page */}
-                <button onClick={()=>{handleLoginAsTenant()}}
-                className="text-blue-500 active:scale-95 cursor-pointer hover:text-blue-800 transition-colors"
-                >Login as Tenant</button>
-            </div>
-            <div className="mt-4 text-center text-gray-500 text-sm">
-            Demo credentials: admin / admin123
-          </div>
 
-          </div>
-          {/* Login Card End */}
-         </div>
+                    </div>
+                    {/* Login Card End */}
+                </div>
+
+            </div>
 
         </div>
-
-    </div>
-  )
+    )
 }
 
 export default AdminLogin

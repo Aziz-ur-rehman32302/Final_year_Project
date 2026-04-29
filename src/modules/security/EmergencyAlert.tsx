@@ -43,48 +43,49 @@ export default function EmergencyAlert() {
         </h1>
         <p className="text-gray-600 mt-2">Send instant alerts to all tenants, security dashboards and personnel.</p>
       </div>
-
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-red-200 max-w-2xl">
-         {success && (
-           <div className="mb-4 bg-green-100 text-green-700 p-3 rounded-lg border border-green-200 font-medium">
-             Emergency broadcast sent successfully to all tenants and security personnel.
-           </div>
-         )}
-        <form onSubmit={handleSendAlert} className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">Alert Title</label>
-            <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-3 border-2 border-red-100 focus:border-red-500 rounded-md outline-none" placeholder="e.g. Lift Breakdown in Block C" />
-          </div>
-
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-semibold text-gray-800 mb-1">Alert Type</label>
-              <select required value={formData.alert_type} onChange={e => setFormData({...formData, alert_type: e.target.value})} className="w-full p-3 border-2 border-red-100 focus:border-red-500 rounded-md outline-none bg-white">
-                <option value="general">General Alert</option>
-                <option value="fire_emergency">Fire Emergency</option>
-                <option value="utility_issue">Utility Issue (Electricity/Water)</option>
-                <option value="security_threat">Security Threat</option>
-                <option value="maintenance">Urgent Maintenance (Lift/Cleaning)</option>
-              </select>
+      <div className=" flex items-center justify-center">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-red-200 max-w-2xl ">
+          {success && (
+            <div className="mb-4 bg-green-100 text-green-700 p-3 rounded-lg border border-green-200 font-medium">
+              Emergency broadcast sent successfully to all tenants and security personnel.
             </div>
-            
-            <div className="flex-1">
-              <label className="block text-sm font-semibold text-gray-800 mb-1">Target Audience</label>
-              <select required value={formData.target_audience} onChange={e => setFormData({...formData, target_audience: e.target.value})} className="w-full p-3 border-2 border-red-100 focus:border-red-500 rounded-md outline-none bg-white">
-                <option value="all_tenants">All Tenants Worldwide</option>
-                <option value="security_only">Security Team Only</option>
-              </select>
+          )}
+          <form onSubmit={handleSendAlert} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1">Alert Title</label>
+              <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-3 border-2 border-red-100 focus:border-red-500 rounded-md outline-none" placeholder="e.g. Lift Breakdown in Block C" />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-1">Emergency Message & Instructions</label>
-            <textarea required value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} className="w-full p-3 border-2 border-red-100 focus:border-red-500 rounded-md h-32 outline-none" placeholder="Provide clear instructions for tenants and security personnel..."></textarea>
-          </div>
-          <button type="submit" disabled={loading} className="w-full bg-red-600 text-white py-3 rounded-md hover:bg-red-700 transition font-bold text-lg flex justify-center items-center gap-2">
-             <Radio className="w-5 h-5"/> {loading ? 'Broadcasting...' : 'BROADCAST ALERT NOW'}
-          </button>
-        </form>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-semibold text-gray-800 mb-1">Alert Type</label>
+                <select required value={formData.alert_type} onChange={e => setFormData({...formData, alert_type: e.target.value})} className="w-full p-3 border-2 border-red-100 focus:border-red-500 rounded-md outline-none bg-white">
+                  <option value="general">General Alert</option>
+                  <option value="fire_emergency">Fire Emergency</option>
+                  <option value="utility_issue">Utility Issue (Electricity/Water)</option>
+                  <option value="security_threat">Security Threat</option>
+                  <option value="maintenance">Urgent Maintenance (Lift/Cleaning)</option>
+                </select>
+              </div>
+              
+              <div className="flex-1">
+                <label className="block text-sm font-semibold text-gray-800 mb-1">Target Audience</label>
+                <select required value={formData.target_audience} onChange={e => setFormData({...formData, target_audience: e.target.value})} className="w-full p-3 border-2 border-red-100 focus:border-red-500 rounded-md outline-none bg-white">
+                  <option value="all_tenants">All Tenants Worldwide</option>
+                  <option value="security_only">Security Team Only</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1">Emergency Message & Instructions</label>
+              <textarea required value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} className="w-full p-3 border-2 border-red-100 focus:border-red-500 rounded-md h-32 outline-none" placeholder="Provide clear instructions for tenants and security personnel..."></textarea>
+            </div>
+            <button type="submit" disabled={loading} className="w-full bg-red-600 text-white py-3 rounded-md hover:bg-red-700 transition font-bold text-lg flex justify-center items-center gap-2">
+              <Radio className="w-5 h-5"/> {loading ? 'Broadcasting...' : 'BROADCAST ALERT NOW'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
