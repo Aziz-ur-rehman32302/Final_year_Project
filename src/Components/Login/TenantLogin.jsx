@@ -147,7 +147,7 @@ const TenantLogin = () => {
                     </div> */}
                     {/* Login Card Start */}
                     <div className="bg-white rounded-3xl shadow-2xl py-8 px-8 border-4 border-orange-400">
-                        <h2 className="text-gray-900 mb-8 text-center font-bold text-2xl">Tenant Login</h2>
+                        <h2 className="text-gray-900 mb-8 text-center font-bold text-2xl">Login</h2>
 
                         <form onSubmit={handleLogin}>
 
@@ -217,11 +217,11 @@ const TenantLogin = () => {
 
                         </form>
 
-                        <div className="mt-6 text-center">
+                        {/* <div className="mt-6 text-center">
                             <button onClick={handleLoginasAdmin}
                                 className="w-full border-2 border-orange-500 text-orange-500 active:scale-95 cursor-pointer hover:bg-orange-50 transition-colors py-2.5 rounded-xl font-semibold text-base"
                             >Login as Admin</button>
-                        </div>
+                        </div> */}
 
 
                     </div>

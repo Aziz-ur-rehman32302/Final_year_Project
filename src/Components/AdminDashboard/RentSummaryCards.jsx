@@ -144,7 +144,7 @@ const RentSummaryCards = () => {
         </div>
         <div>
           <h1 className="text-2xl text-white font-medium">
-            ${rentData.TotalAmount.toLocaleString()}
+            ₨ {rentData.TotalAmount.toLocaleString()}
           </h1>
           <h1 className="text-lg text-white">Total Due</h1>
         </div>
@@ -157,7 +157,7 @@ const RentSummaryCards = () => {
         </div>
         <div>
           <h1 className="text-2xl font-medium text-green-800">
-            ${rentData.totalPaidAmount.toLocaleString()}
+            ₨ {rentData.totalPaidAmount.toLocaleString()}
           </h1>
           <h1 className="text-lg text-green-700">Total Paid</h1>
         </div>
@@ -170,7 +170,7 @@ const RentSummaryCards = () => {
         </div>
         <div>
           <h1 className="text-2xl font-medium text-red-800">
-            ${rentData.totalUnPaidAmount.toLocaleString()}
+            ₨ {rentData.totalUnPaidAmount.toLocaleString()}
           </h1>
           <h1 className="text-lg text-red-700">Total Unpaid</h1>
         </div>

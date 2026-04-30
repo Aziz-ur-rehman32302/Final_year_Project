@@ -1011,7 +1011,7 @@ const DashBoard = () => {
                         {record.month}
                       </td>
                       <td className="py-3 px-4 text-gray-700">
-                        ${record.amount?.toLocaleString() || '0'}
+                        ₨ {record.amount?.toLocaleString() || '0'}
                       </td>
                       <td className="py-3 px-4">
                         {record.status === 'Paid' ? (

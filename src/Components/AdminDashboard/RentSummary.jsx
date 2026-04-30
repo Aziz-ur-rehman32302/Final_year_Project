@@ -138,7 +138,7 @@ const RentSummary = () => {
         </div>
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            ${TotalAmount.toLocaleString()}
+            ₨ {TotalAmount.toLocaleString()}
           </h1>
           <p className="text-gray-600 mt-1">Total Due</p>
         </div>
@@ -153,7 +153,7 @@ const RentSummary = () => {
         </div>
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            ${totalPaidAmount.toLocaleString()}
+            ₨ {totalPaidAmount.toLocaleString()}
           </h1>
           <p className="text-gray-600 mt-1">Total Paid</p>
         </div>
@@ -168,7 +168,7 @@ const RentSummary = () => {
         </div>
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            ${totalUnPaidAmount.toLocaleString()}
+            ₨ {totalUnPaidAmount.toLocaleString()}
           </h1>
           <p className="text-gray-600 mt-1">Total Unpaid</p>
         </div>

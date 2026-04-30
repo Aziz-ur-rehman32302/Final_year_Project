@@ -255,17 +255,17 @@ const initialRentRecords: TenantRent[] = [];
                 {/* 1st Card  */}
                 <div className="bg-blue-600 rounded-lg p-4 text-white hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
                 <div className="text-sm text-blue-100 mb-1">Total Due</div>
-                <div className="text-2xl font-medium">${TotalAmount.toLocaleString()}</div>
+                <div className="text-2xl font-medium">₨ {TotalAmount.toLocaleString()}</div>
               </div>
               {/* 2nd Card  */}
               <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
                 <div className="text-sm text-gray-600 mb-1">Total Paid</div>
-                <div className="text-2xl font-medium text-green-600">${totalPaidAmount.toLocaleString()}</div>
+                <div className="text-2xl font-medium text-green-600">₨ {totalPaidAmount.toLocaleString()}</div>
               </div>
               {/* 3rd Card  */}
               <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-xl hover:-translate-y-1 cursor-pointer  transition-all  duration-200 ease-in-out">
                 <div className="text-sm text-gray-600 mb-1">Total Unpaid</div>
-                <div className="text-2xl font-medium text-red-600">${total_UnPaidAmount.toLocaleString()}</div>
+                <div className="text-2xl font-medium text-red-600">₨ {total_UnPaidAmount.toLocaleString()}</div>
               </div>
               </>
             )}
@@ -380,7 +380,7 @@ const initialRentRecords: TenantRent[] = [];
                                 <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>{record.tenantName}</td>
                                 <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>{record.shopNumber}</td>
                                 <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>{record.rentMonth}</td>
-                                <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>${record.dueAmount.toLocaleString()}</td>
+                                <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>₨ {record.dueAmount.toLocaleString()}</td>
                                 <td className='px-3 py-2 text-base text-gray-900 whitespace-nowrap'>{record.dueDate}</td>
                                
                                 <td className='px-3 py-2 whitespace-nowrap'>

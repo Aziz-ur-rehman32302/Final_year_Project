@@ -139,7 +139,7 @@ const Admin_Cards = () => {
               <TrendingUp className="w-7 h-7 bg-blue-700 p-1 rounded text-white" />
             </div>
             <div>
-                <h1 className='text-2xl text-white font-medium'>${rentData.TotalAmount.toLocaleString()}</h1>
+                <h1 className='text-2xl text-white font-medium'>₨ {rentData.TotalAmount.toLocaleString()}</h1>
                 <h1 className='text-lg text-white'>Total Due</h1>
             </div>
           </div>
@@ -150,7 +150,7 @@ const Admin_Cards = () => {
                <TrendingUp className="w-7 h-7 text-green-600 rounded p-1 bg-green-100" />
               </div>
               <div>
-                  <h1 className='text-2xl font-medium text-green-800'>${rentData.totalPaidAmount.toLocaleString()}</h1>
+                  <h1 className='text-2xl font-medium text-green-800'>₨ {rentData.totalPaidAmount.toLocaleString()}</h1>
                   <h1 className='text-lg text-green-700'>Total Paid</h1>
               </div>
           </div>
@@ -161,7 +161,7 @@ const Admin_Cards = () => {
                <AlertCircle className="w-7 h-7 text-red-600 rounded p-1 bg-red-100" />
               </div>
               <div>
-                  <h1 className='text-2xl font-medium text-red-800'>${rentData.totalUnPaidAmount.toLocaleString()}</h1>
+                  <h1 className='text-2xl font-medium text-red-800'>₨ {rentData.totalUnPaidAmount.toLocaleString()}</h1>
                   <h1 className='text-lg text-red-700'>Total Unpaid</h1>
               </div>
           </div>
